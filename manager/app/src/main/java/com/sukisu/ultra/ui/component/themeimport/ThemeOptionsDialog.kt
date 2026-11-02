@@ -29,6 +29,8 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.LocalUiMode
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.screen.settings.ThemePackageOptions
+import com.sukisu.ultra.ui.theme.MaterialExpressivePalette
+import com.sukisu.ultra.ui.util.CustomTextGroup
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -49,9 +51,11 @@ fun ThemeOptionsDialog(
     hasCardImage: Boolean,
     hasStickers: Boolean,
     hasAppIcon: Boolean,
-    hasCustomTexts: Boolean,
+    availableCustomTextGroups: Set<CustomTextGroup>,
     onDismissRequest: () -> Unit,
     onConfirm: (ThemePackageOptions) -> Unit,
+    formatVersion: Int? = null,
+    forceMaterial: Boolean = false,
 ) {
     if (!show) return
 
@@ -63,7 +67,27 @@ fun ThemeOptionsDialog(
     var homeCardDisplay by rememberSaveable { mutableStateOf(true) }
     var appIcon by rememberSaveable { mutableStateOf(true) }
     var customTexts by rememberSaveable { mutableStateOf(true) }
+    var customTextHome by rememberSaveable { mutableStateOf(true) }
+    var customTextPageMain by rememberSaveable { mutableStateOf(true) }
+    var customTextPageFeature by rememberSaveable { mutableStateOf(true) }
+    var customTextSettings by rememberSaveable { mutableStateOf(true) }
     var customConfig by rememberSaveable { mutableStateOf(true) }
+
+    val selectedTextGroups = buildSet {
+        if (customTextHome) add(CustomTextGroup.HOME)
+        if (customTextPageMain) add(CustomTextGroup.PAGE_MAIN)
+        if (customTextPageFeature) add(CustomTextGroup.PAGE_FEATURE)
+        if (customTextSettings) add(CustomTextGroup.SETTINGS)
+    }.intersect(availableCustomTextGroups)
+
+    fun setTextGroupChecked(group: CustomTextGroup, checked: Boolean) {
+        when (group) {
+            CustomTextGroup.HOME -> customTextHome = checked
+            CustomTextGroup.PAGE_MAIN -> customTextPageMain = checked
+            CustomTextGroup.PAGE_FEATURE -> customTextPageFeature = checked
+            CustomTextGroup.SETTINGS -> customTextSettings = checked
+        }
+    }
 
     val options = ThemePackageOptions(
         colors = colors,
@@ -73,11 +97,12 @@ fun ThemeOptionsDialog(
         stickers = stickers && hasStickers,
         homeCardDisplay = homeCardDisplay,
         appIcon = appIcon && hasAppIcon,
-        customTexts = customTexts && hasCustomTexts,
+        customTexts = customTexts && availableCustomTextGroups.isNotEmpty(),
+        customTextGroups = selectedTextGroups,
         customConfig = customConfig,
     )
 
-    when (LocalUiMode.current) {
+    when (if (forceMaterial) UiMode.Material else LocalUiMode.current) {
         UiMode.Miuix -> {
             WindowDialog(
                 show = show,
@@ -96,6 +121,13 @@ fun ThemeOptionsDialog(
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
+                        if (formatVersion != null) {
+                            Text(
+                                text = stringResource(R.string.theme_package_format_version, formatVersion),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.primary,
+                            )
+                        }
                         Spacer(Modifier.height(4.dp))
                         OptionGroupLabel(stringResource(R.string.settings_section_colors))
                         CheckboxPreference(
@@ -144,12 +176,24 @@ fun ThemeOptionsDialog(
                                 onCheckedChange = { appIcon = it },
                             )
                         }
-                        if (hasCustomTexts) {
+                        if (availableCustomTextGroups.isNotEmpty()) {
                             CheckboxPreference(
                                 title = stringResource(R.string.theme_opt_custom_texts),
                                 checked = customTexts,
                                 onCheckedChange = { customTexts = it },
                             )
+                            if (customTexts) {
+                                CustomTextGroup.entries
+                                    .filter { it in availableCustomTextGroups }
+                                    .forEach { group ->
+                                        CheckboxPreference(
+                                            title = stringResource(group.titleRes),
+                                            checked = group in selectedTextGroups,
+                                            onCheckedChange = { setTextGroupChecked(group, it) },
+                                            modifier = Modifier.padding(start = 12.dp),
+                                        )
+                                    }
+                            }
                         }
                         OptionGroupLabel(stringResource(R.string.theme_opt_other))
                         CheckboxPreference(
@@ -178,7 +222,7 @@ fun ThemeOptionsDialog(
                 }
             )
         }
-        UiMode.Material -> {
+        UiMode.Material -> MaterialExpressivePalette {
             AlertDialog(
                 onDismissRequest = onDismissRequest,
                 title = { MaterialText(title) },
@@ -192,8 +236,17 @@ fun ThemeOptionsDialog(
                             text = message,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 12.dp)
                         )
+                        if (formatVersion != null) {
+                            MaterialText(
+                                text = stringResource(R.string.theme_package_format_version, formatVersion),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                        } else {
+                            Spacer(Modifier.height(12.dp))
+                        }
                         MaterialOptionGroupLabel(stringResource(R.string.settings_section_colors))
                         MaterialCheckboxRow(
                             title = stringResource(R.string.theme_opt_colors),
@@ -241,12 +294,24 @@ fun ThemeOptionsDialog(
                                 onCheckedChange = { appIcon = it },
                             )
                         }
-                        if (hasCustomTexts) {
+                        if (availableCustomTextGroups.isNotEmpty()) {
                             MaterialCheckboxRow(
                                 title = stringResource(R.string.theme_opt_custom_texts),
                                 checked = customTexts,
                                 onCheckedChange = { customTexts = it },
                             )
+                            if (customTexts) {
+                                CustomTextGroup.entries
+                                    .filter { it in availableCustomTextGroups }
+                                    .forEach { group ->
+                                        MaterialCheckboxRow(
+                                            title = stringResource(group.titleRes),
+                                            checked = group in selectedTextGroups,
+                                            onCheckedChange = { setTextGroupChecked(group, it) },
+                                            modifier = Modifier.padding(start = 16.dp),
+                                        )
+                                    }
+                            }
                         }
                         MaterialOptionGroupLabel(stringResource(R.string.theme_opt_other))
                         MaterialCheckboxRow(
@@ -296,9 +361,10 @@ private fun MaterialCheckboxRow(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
             .padding(vertical = 4.dp),

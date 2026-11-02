@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.screen.settings.ThemePackageOptions
+import com.sukisu.ultra.ui.util.CustomTextGroup
 
 @Composable
 fun ThemeExportDialog(
@@ -12,7 +13,7 @@ fun ThemeExportDialog(
     hasCardImage: Boolean,
     hasStickers: Boolean,
     hasAppIcon: Boolean,
-    hasCustomTexts: Boolean,
+    availableCustomTextGroups: Set<CustomTextGroup>,
     onDismissRequest: () -> Unit,
     onConfirm: (ThemePackageOptions) -> Unit,
 ) {
@@ -24,8 +25,10 @@ fun ThemeExportDialog(
         hasCardImage = hasCardImage,
         hasStickers = hasStickers,
         hasAppIcon = hasAppIcon,
-        hasCustomTexts = hasCustomTexts,
+        availableCustomTextGroups = availableCustomTextGroups,
         onDismissRequest = onDismissRequest,
         onConfirm = onConfirm,
+        formatVersion = com.sukisu.ultra.ui.util.ThemePackageStorage.CURRENT_VERSION,
+        forceMaterial = true,
     )
 }

@@ -7,6 +7,7 @@ import android.net.Uri
 import java.io.File
 import android.os.Build
 import com.sukisu.ultra.ui.util.customText
+import com.sukisu.ultra.ui.util.customTextGroupsIn
 import com.sukisu.ultra.ui.util.CustomTextKey
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -129,8 +130,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -329,7 +330,7 @@ fun ColorPaletteScreenMiuix(
         val colorsSectionExpanded = state.colorsSectionExpanded
         var stickerEditorExpanded by rememberSaveable { mutableStateOf(false) }
         var stickerDraft by remember { mutableStateOf(state.homeCardStickers) }
-        var selectedSticker by rememberSaveable { mutableStateOf(0) }
+        var selectedSticker by rememberSaveable { mutableIntStateOf(0) }
         var lastStickerCount by remember { mutableIntStateOf(state.homeCardStickers.size) }
         LaunchedEffect(state.homeCardStickers) {
             stickerDraft = state.homeCardStickers
@@ -608,7 +609,6 @@ fun ColorPaletteScreenMiuix(
                     AppCard(
                         modifier = Modifier
                             .bringIntoViewRequester(sectionRequester("appearance"))
-                            .padding(bottom = 12.dp)
                             .fillMaxWidth(),
                     ) {
                         MiuixSectionHeader(
@@ -681,7 +681,7 @@ fun ColorPaletteScreenMiuix(
                                 }
 
                                 ArrowPreference(
-                                    title = stringResource(id = R.string.app_icon_title),
+                                    title = customText(CustomTextKey.PAGE_APP_ICON),
                                     summary = stringResource(
                                         id = BuiltinAppIcons.find(uiState.appIconId).nameRes
                                     ),
@@ -696,14 +696,15 @@ fun ColorPaletteScreenMiuix(
                                     },
                                     onClick = actions.onOpenAppIcon,
                                 )
+                                val customTextsTitle = customText(CustomTextKey.PAGE_CUSTOM_TEXTS)
                                 ArrowPreference(
-                                    title = stringResource(id = R.string.settings_custom_texts),
+                                    title = customTextsTitle,
                                     summary = stringResource(id = R.string.settings_custom_texts_summary),
                                     startAction = {
                                         Icon(
                                             Icons.Rounded.Edit,
                                             modifier = Modifier.padding(end = 8.dp),
-                                            contentDescription = stringResource(R.string.settings_custom_texts),
+                                            contentDescription = customTextsTitle,
                                             tint = colorScheme.onBackground,
                                         )
                                     },
@@ -995,7 +996,7 @@ fun ColorPaletteScreenMiuix(
                                     stringResource(id = R.string.settings_theme_mode_light),
                                     stringResource(id = R.string.settings_theme_mode_dark),
                                 )
-                                TabRow(
+                                TabRowWithContour(
                                     tabs = themeItems,
                                     selectedTabIndex = (if (state.themeMode >= 3) state.themeMode - 3 else state.themeMode).coerceIn(0, 2),
                                     onTabSelected = { index ->
@@ -1003,7 +1004,12 @@ fun ColorPaletteScreenMiuix(
                                     },
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                     colors = TabRowDefaults.tabRowColors(
-                                        backgroundColor = if (hasCustomBackground) Color.Transparent else colorScheme.surface,
+                                        // The selector sits inside a surface-container card, where the
+                                        // default surface track is invisible. Use the highest container
+                                        // as the track and the card color as the thumb; both follow the
+                                        // shared card opacity so they stay legible over a custom
+                                        // background as well.
+                                        backgroundColor = backgroundAwareColor(colorScheme.surfaceContainerHighest),
                                         selectedBackgroundColor = backgroundAwareColor(colorScheme.surfaceContainer),
                                     ),
                                 )
@@ -1137,6 +1143,19 @@ fun ColorPaletteScreenMiuix(
                         ) {
                             Column {
                                 HorizontalDivider()
+                                BasicComponent(
+                                    title = customText(CustomTextKey.PAGE_THEME_STORE),
+                                    summary = stringResource(id = R.string.theme_store_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Palette,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = customText(CustomTextKey.PAGE_THEME_STORE),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = actions.onOpenThemeStore,
+                                )
                                 BasicComponent(
                                     title = stringResource(id = R.string.theme_reset),
                                     summary = stringResource(id = R.string.theme_reset_summary),
@@ -1542,7 +1561,7 @@ fun ColorPaletteScreenMiuix(
         hasCardImage = state.homeCardImagePath.isNotBlank(),
         hasStickers = state.homeCardStickers.isNotEmpty(),
         hasAppIcon = true,
-        hasCustomTexts = uiState.customTexts.isNotEmpty() || uiState.customHomeTitle.isNotBlank(),
+        availableCustomTextGroups = customTextGroupsIn(uiState.customTexts, uiState.customHomeTitle),
         onDismissRequest = { showExportDialog = false },
         onConfirm = { options ->
             showExportDialog = false
