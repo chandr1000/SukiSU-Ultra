@@ -1,0 +1,6 @@
+branch: gki-android15-6.6
+commit: c7f670f57b7d43d75066b6657f8aee9cdf580d96
+fetched: 2026-11-02
+# Primary tracked branch per plan §4.5 (C6 stable-only; -dev twins excluded).
+# Full kernel mapping: plan §7.2. Parser contract (§7.1 + both workflows):
+# first 'branch:' and first 'commit:' lines.

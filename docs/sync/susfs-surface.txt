@@ -1,0 +1,38 @@
+# docs/sync/susfs-surface.txt — Phase 0 audit (§4.4), generated 2026-11-02
+# Source: suki/builtin @ 1cfa57340590971cba7521ed536da8ebbedc5f0a
+# Section 1: plan's command (name matches of 'susfs|sus_' over the builtin tree).
+# Section 2: enrichment — files CONTAINING 'susfs|sus_' (content references):
+#            the conflict-hotspot map for Lane B (§6.2) and Phase 3 (§7.4).
+# Note: fs/*.c hotspots listed in §7.4 live in the TARGET KERNEL TREE (applied at
+#       kernel-build time), not in this repo — only the in-repo surface is mapped here.
+
+--- name matches: git ls-tree -r --name-only suki/builtin | grep -iE 'susfs|sus_' ---
+kernel/extension/susfs_extension.c
+kernel/extension/susfs_extension.h
+
+--- content references: git grep -l -iE 'susfs|sus_' suki/builtin -- kernel/ userspace/ ---
+kernel/Kconfig
+kernel/Makefile
+kernel/extension/extension.c
+kernel/extension/susfs_extension.c
+kernel/extension/susfs_extension.h
+kernel/feature/adb_root.c
+kernel/feature/kernel_umount.c
+kernel/feature/sucompat.c
+kernel/feature/sucompat.h
+kernel/hook/lsm_hook.c
+kernel/include/uapi/extension.h
+kernel/kernel_includes.h
+kernel/ksu_main.c
+kernel/manager/pkg_observer.c
+kernel/policy/app_profile.c
+kernel/runtime/ksud.c
+kernel/selinux/rules.c
+kernel/selinux/selinux.c
+kernel/selinux/selinux.h
+kernel/selinux/sepolicy.c
+kernel/sulog/event.c
+kernel/sulog/event.h
+kernel/supercall/dispatch.c
+kernel/supercall/supercall.c
+kernel/supercall/supercall.h

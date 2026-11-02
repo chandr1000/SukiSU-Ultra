@@ -1,0 +1,6 @@
+# docs/sync/suki-drift.txt — Phase 0 audit (§4.4), generated 2026-11-02
+# Plan command: git diff --stat $(git merge-base suki/main origin/main) suki/main -- kernel/
+# merge-base = ef6464ff7e942f6d756a369116599a3e73866a8a context: fork origin/main (0 ahead / 1 behind parent)
+# Result: EMPTY — the 1-commit fork delta (ef6464ff, 'manager: expand interface text
+# customization') touches manager/ only (35 files, +825/-272). kernel/ drift fork<->parent = 0.
+# Ancestor gap is tracked separately: ksu/main<->suki/builtin = 847/2811 commits (see audit).
