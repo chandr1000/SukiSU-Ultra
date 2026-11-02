@@ -1,0 +1,82 @@
+# Plan §9.2 (Phase 5B) — weekly ancestor-sync PR bot. NEVER auto-merges.
+# Branches off origin/builtin and merges tiann/KernelSU main. On conflicts it
+# commits an ours-side placeholder state (so the PR exists and CI runs), titles
+# the PR with ⚠️ and lists conflicted files in the body; resolution stays
+# manual (§6.1–§6.2, hotspot map: docs/sync/susfs-surface.txt).
+# NOTE: schedules only run from the default branch — keep this file on main.
+name: upstream-sync
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"        # Mondays 03:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge ksu/main into a builtin-based bot branch
+        env:
+          BR: bot/ksu-sync-${{ github.run_id }}
+        run: |
+          set -e
+          git config user.name  sync-bot
+          git config user.email bot@users.noreply.github.com
+          git remote add ksu https://github.com/tiann/KernelSU.git
+          git fetch ksu main --tags --prune
+          if ! git rev-parse --verify -q origin/builtin >/dev/null; then
+            echo "::warning::origin/builtin does not exist — run Phase 1 (plan §5) first"
+            echo "state=skipped" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          git switch -c "$BR" origin/builtin
+          if git merge --no-ff --no-edit ksu/main; then
+            echo "state=clean" >> "$GITHUB_ENV"
+          else
+            git diff --name-only --diff-filter=U > conflicts.txt || true
+            git diff --name-only --diff-filter=U | xargs -r git checkout --ours --
+            git add -A
+            git commit --no-edit -m "conflicted merge state (ours-side placeholder — not a resolution)"
+            echo "state=conflict" >> "$GITHUB_ENV"
+          fi
+          git push -u origin "$BR"
+
+      - name: Open sync PR (clean or conflict-flagged)
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          STATE: ${{ env.state }}
+        with:
+          script: |
+            const fs = require('fs');
+            const state = process.env.STATE;
+            if (!state || state === 'skipped') { core.info('sync skipped'); return; }
+            const conflict = state === 'conflict';
+            const head = `bot/ksu-sync-${context.runId}`;
+            let body;
+            if (conflict) {
+              const raw = fs.existsSync('conflicts.txt') ? fs.readFileSync('conflicts.txt', 'utf8').trim() : '';
+              body = 'Conflicted files:\n```\n' + (raw || '(none captured)').slice(0, 60000) + '\n```\n' +
+                '⚠️ Ours-side placeholder commit — NOT a resolution. Resolve manually per plan §6.1–§6.2 ' +
+                '(hotspot map: docs/sync/susfs-surface.txt). Do not merge this PR as-is.';
+            } else {
+              body = 'Clean textual merge of tiann/KernelSU `main` into the `builtin` lineage (plan §6.2).\n' +
+                'Gates V1–V4 (plan §8) must pass before merge.';
+            }
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head,
+              base: 'builtin',
+              title: conflict ? '⚠️ upstream sync (CONFLICTS — manual resolution needed)'
+                              : 'upstream sync: tiann/KernelSU main',
+              body
+            }).catch(e => core.warning('PR create failed: ' + e.message));
