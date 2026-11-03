@@ -1,0 +1,853 @@
+# ksu/main absorption audit — Path 2 bootstrap work queue
+# pin: ksu/main = 28db74f6 (2026-11-01) · ours baseline: origin/main = ea9f31bb
+# generated: 2026-11-03 · merge-base before bootstrap: 203cd4d7 (2025-03-02)
+# format: <sha> <date> <subject>, newest first, 847 commits
+# usage: cherry-pick -x by topic batch (docs/sync/2026-11-03.md §4); mark as absorbed
+
+28db74f6 2026-11-01 kernel: Fix SELinux generation tracking for policy updates (#3964)
+bec9c134 2026-10-31 kernel: use vmlinux.btf query to workaround 6.6.144's ABI changes (#3962)
+b1fce49e 2026-10-31 kernel: Remove noisy logs from critical and frequent paths (#3960)
+2fe18831 2026-10-31 kernel: Balance file references when reopening wrapped files (#3958)
+51c21786 2026-10-30 ci: pin website deploy to Node LTS
+446c2920 2026-10-30 website: add llms.txt for AI agents
+7bab12df 2026-10-30 js: auto publish npm (#3956)
+ab05a062 2026-10-30 fix: add new pm interface (#3955)
+bb5f9faa 2026-10-30 manager: add File interface to WebUI (#3732)
+db6263d3 2026-10-29 fix(kernel): align SELinux hide policy parsing (#3936)
+10efe664 2026-10-28 Fix ads
+75e179d3 2026-10-25 update ads.txt
+528bafc5 2026-10-24 kernel: remove useless code (#3945)
+3352209f 2026-10-23 userspace: Update waitsys to fix crash
+6d31a613 2026-10-21 build(deps): bump the npm group across 1 directory with 14 updates (#3932)
+46636100 2026-10-20 manager: remove DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION (#3927)
+469c4282 2026-10-19 kernel: Fix init.rc detection for bind-mounted files (#3924)
+b609757f 2026-10-19 manager: fix predictive back in dialog-hosted m3 components (#3923)
+605e4269 2026-10-19 manager: remove block kernel modules UI, make it developer only (#3920)
+6b736083 2026-10-19 manager: decode params.json with plain kotlinx.serialization (#3919)
+0f58f12c 2026-10-19 su_mount_ns: move ksys_unshare to ksyscall (#3916)
+9f429f6b 2026-10-19 templates: add sdmaidse.root (#3914)
+e9ef3540 2026-10-19 fix func change in 6.19+ (#3917)
+96770dfb 2026-10-17 Handle execveat selinux_setup exec on Android 17 QPR3 (#3911)
+0faec0cc 2026-10-16 Add module preinit: run actions before SELinux policy loads (#3907)
+9f5966b4 2026-10-15 ksud: Accept empty and long kallsyms tokens (#3804)
+d9b0763b 2026-10-16 manager: Update Indonesian translations (#3885)
+3186a2fe 2026-10-16 Update README_TR.md (#3409)
+60662ac4 2026-10-16 ksud: don't panic on a broken zip in get_zip_uncompressed_size (#3591)
+f866d782 2026-10-16 ksud: validate lengths when loading module config (#3598)
+88cfd4ce 2026-10-16 manager: guard parseKernelVersion against non-Int version fields (#3593)
+d3025e2f 2026-10-16 fix: a missing verb in the disclaimer (#3658)
+5d880211 2026-10-16 Fix typo in module documentation regarding boot-completed (#3692)
+200818ca 2026-10-15 Support hot installing modules (#3901)
+b94e0916 2026-10-15 website: document one-shot scripts (#3898)
+013b0448 2026-10-15 manager: run one-shot script entries from the module store (#3892)
+0c0fdb96 2026-10-12 manager: Update Indonesian translations (#3748)
+ac5f748c 2026-10-12 build(deps): bump the crates group across 1 directory with 36 updates (#3870)
+c8232e04 2026-10-12 manager: support different callback when description cannot be expanded
+aaa14a34 2026-10-12 fix(manager): require explicit opt-in to block kernel modules (#3883)
+0a1f3ff7 2026-10-12 feat: add shell_su_adb_only feature to restrict shell root to adb sessions (#3882)
+f895b80a 2026-10-11 feat: block kernel modules at boot via native module_blacklist (#3881)
+f7bfa28d 2026-10-11 feat(manager): switch module repository to the KernelSU Modules API (#3880)
+6e386044 2026-10-10 feat: support forcing feature values via ksu_config (incl. boot-patch-v2) (#3878)
+a85dcbcf 2026-10-10 fix(kernel): fix time side-channel detection in selinux hide (#3877)
+6a2f6324 2026-10-10 fix(manager): Block back navigation while flashing
+df03912f 2026-10-09 fix(kernel): Keep original permission check sequence
+ab23091e 2026-10-08 fix(kernel): pkg_observer: defer track_throne to task_work (#3871)
+a05b1d7f 2026-10-08 apk_sign: get_pkg_from_apk_dir_path: move to strrchr (#3874)
+a810677b 2026-10-08 fix(kernel): fix sidtab detection (#3873)
+24d9bc37 2026-10-08 fix(manager): Correct remote factory image probing and KMI detection
+e7b07110 2026-10-07 Revert "fix(manager): Use NavigationBackHandler for Material SearchBar"
+6b5f55bd 2026-10-06 refactor(kernel): pin manager package name (#3868)
+26c45e27 2026-10-06 fix(kernel): throne_tracker: avoid deadlocks on iterate_dir (#3865)
+e4d93223 2026-10-06 build(deps): bump the npm group across 1 directory with 19 updates (#3867)
+08b2e9e4 2026-10-05 manager: don't offer kernel install in jailbreak mode (#3801)
+9afddcda 2026-10-05 ksud: Skip KMI detection for config-only patches (#3803)
+0b5a75e2 2026-10-05 ksud: Scan APK comments up to the ZIP length limit (#3802)
+9bcee88a 2026-10-05 fix(manager): Use NavigationBackHandler for Material SearchBar
+cd4af89c 2026-10-04 fix(kernel): Avoid repeatedly triggering service stage (#3800)
+0ff54fab 2026-10-03 fix(kernel): Fix avtab removal length calculation and xperms update
+bfb49eec 2026-10-03 feat(ksud): add timeout for boot stage scripts (#3797)
+ba668b00 2026-10-03 chore(ksud): make clippy happy
+08a3b087 2026-09-24 refactor(ksud): update waitsys and refactor logic (#3755)
+a8d3bf0a 2026-09-23 fix(ksud): use waitsys to wait when soft reboot (#3754)
+623eba3e 2026-09-23 kernel: Add Android riscv64 support with LKM (#3750)
+449436dd 2026-09-23 fix(manager): Unexport magica receiver (#3747)
+bd82a853 2026-09-22 kernel: fix RCU-protected SELinux policy access (#3746)
+5c25b235 2026-09-22 fix(ksud): wait for service death before post-fs-data when soft reboot (#3744)
+7759d878 2026-09-22 fix(manager): Prevent exception if no root access (#3741)
+87db8315 2026-09-21 kernel: fix avtab iteration macro (#3701)
+11f41511 2026-09-21 kernel: util: wire up ksyscall (#3742)
+c25187e3 2026-09-21 manager: fix a crash issue
+95b87145 2026-09-20 fix(kernel): Miscellaneous build errors in syscall_hook_manager and arm64 patch_memory (#3738)
+6ebd714c 2026-09-20 fix(kernel): open file without touching fsnotify and atime while scanning manager apks (#3733)
+2179b9e4 2026-09-20 manager: update miuix to 0.9.4
+85cab5f8 2026-09-19 build(deps): migrate dependencies to new repos (#3723)
+9b25a0f2 2026-09-18 manager: Support customizing module description collapse line count (#3703)
+05b13d6f 2026-09-18 manager: Block horizontal drag in search overlay
+093ebdfd 2026-09-18 manager: use LazyColumn in ColorPaletteScreenMaterial (#3730)
+26a09914 2026-09-17 build(deps): bump the maven group in /manager with 5 updates (#3727)
+5c808db1 2026-09-17 manager: Fix page jumps when focusing search
+3a7ac9dc 2026-09-15 fix(actions): Remove all setup-android
+bb4f4e86 2026-09-15 fix(actions): Remove setup-android
+3262be6c 2026-09-15 manager: Fix SearchBar focus issues
+e23e035a 2026-09-14 fix(manager): Use MediaStore to download modules (#3707)
+665fd96b 2026-09-14 kernel: retain capabilities across execve for non-root profiles (#3710)
+33d0c920 2026-09-11 manager: Block background taps without consuming drag events
+aa08b390 2026-09-09 fix(kernel): Reject all signature block id except v2 (#3700)
+fccd77fe 2026-09-08 feat(resetprop): support update long value for ro props (#3696)
+dfadc083 2026-09-07 fix(actions): update ksubot
+e7271860 2026-09-07 feat: new version matching detection mechanism (#3516)
+58aecc40 2026-09-06 build(deps): bump actions/setup-java from 5 to 6 in the actions group (#3673)
+5640a4f0 2026-09-06 build(deps): bump the crates group with 7 updates (#3675)
+9190b01a 2026-09-06 build(deps): bump the npm group in /website with 14 updates (#3676)
+e5c73fdd 2026-09-06 manager: preload pager data and fix resume refresh
+c72f294e 2026-09-06 fix(kernel, uapi, ksud): make fd wrapper work with app profile (#3679)
+35feb588 2026-09-06 feat(ksud): Implement SIGSYS handler (#3677)
+b3bb3942 2026-09-06 manager: optimize splash screen again
+f5908a8a 2026-09-06 manager: optimize splash screen
+e9bf8bcd 2026-09-06 manager: remove all mipmap rec
+3c124062 2026-09-04 manager: update Chinese (Traditional Han script, Hong Kong) translations (#3685)
+fd584fbd 2026-09-04 manaer: remove module page reboot popup
+a1437bc6 2026-09-04 manager: redesign home page layout
+32ce89ff 2026-09-04 fix(kernel): Preserve a ebitmap's size for each policy type (#3680)
+98a8a5f9 2026-09-04 manager: guard floating bottom bar edge taps
+8bb369f2 2026-09-04 manager: fix splash colors in dark theme
+97f3b6b7 2026-09-04 manager: add animated splash screen
+2bb627be 2026-09-03 manager: persist NavRail expansion state
+376b3ffa 2026-09-03 manager: fix floating bottom bar rapid tab switching
+e4ba138c 2026-09-03 manager: sync floating bottom bar style from miuix example
+e38512f1 2026-09-01 docs, manager: update Indonesian translations (#3656)
+3e9a8654 2026-09-01 fix(actions): upload release artifacts correctly (#3671)
+3497a562 2026-08-30 refactor(kernel, ksud, manager): Switch webview zygote umount to allowlist (#3666)
+435ab65e 2026-08-30 docs: update version references to 3.3.0 (#3667)
+932014ab 2026-08-28 build: bump ddk to 20260828, support android17-6.18 (#3663)
+34a82ab7 2026-08-28 fix changes in 6.18+ (#3480)
+a2e00a47 2026-08-27 build(deps): bump the crates group with 6 updates (#3661)
+4867d6c3 2026-08-27 build(deps): bump the npm group in /website with 4 updates (#3662)
+fe4128d6 2026-08-27 build(deps): bump the maven group in /manager with 4 updates (#3660)
+befbcd38 2026-08-26 ksud: Fix su identity argument handling (#3659)
+45217843 2026-08-25 refactor(kernel): Perform umount for webview zygote (#3630)
+0909ad8b 2026-08-25 selinux hide: spoof status page and avd seqno (#3647)
+abc3fdcf 2026-08-23 build(deps): bump the crates group across 1 directory with 18 updates (#3648)
+dab9430f 2026-08-22 feat(ksud): support set selinux context in su (#3653)
+a70c8085 2026-08-20 manager: update Vietnamese translations (#3649)
+4a92049e 2026-08-20 fix(kernel): adapt to backport of 6.6 kernel, fix #3629 (#3632)
+af62466b 2026-08-18 manager: update Indonesian translations (#3645)
+a33dbca3 2026-08-17 manager: support patch remote image (#3644)
+4d1a87df 2026-08-17 fix(kernel): Handle execveat for new bionic libc (#3639)
+2df35074 2026-08-17 manager: add soft reboot toggle in settings
+bc5d5448 2026-08-16 refactor(ksuinit): Remove meaningless /sys mount
+62e88ca9 2026-08-13 manager: use spring animation for pager navigation (#3492)
+da9abf49 2026-08-12 build(deps): bump the npm group in /website with 13 updates (#3634)
+aab67974 2026-08-11 refactor(kernel): Drop v1 signature verification (#3628)
+243f0dd1 2026-08-11 ksud: boot-patch-v2: remove redundant security check (#3627)
+4a5f4311 2026-08-10 ksud: Use kernel BTF for boot image injection
+f5a3b5a1 2026-08-10 ksud: Add boot image LKM injection
+7d7322f2 2026-08-09 fix(manager): Fix RGB color formatting
+5018d57a 2026-08-09 fix(ksud): Fix buffer overflow caused by android-properties library
+e6cc0ef7 2026-08-07 refactor(kernel): Align signature block parsing with AOSP (#3613)
+4cedcc84 2026-08-07 manager: Fix home page bottom padding on miuix style (#3620)
+8948025d 2026-08-07 ksuinit: compat for version magic mismatch kernel (#3584)
+567579a1 2026-08-05 build(deps): bump the crates group with 7 updates (#3616)
+e11c9091 2026-08-05 build(deps): bump the npm group in /website with 6 updates (#3617)
+99a9ce76 2026-08-05 feat: add x64 lkm (#3570)
+63b175d8 2026-07-30 build(deps): bump the npm group in /website with 3 updates (#3606)
+0f65ab64 2026-07-30 build(deps): bump the crates group with 10 updates (#3607)
+9f3c1768 2026-07-30 ksud: resetprop: validate timeout value (#3608)
+953b403a 2026-07-29 kernel: prevent /system/bin/stub_zygote from being unmarked (#3601)
+19ceaf5b 2026-07-29 manager: guard reboots in jailbreak mode
+be53d75f 2026-07-27 kernel: check kernel_read() results when verifying the APK signing block (#3594)
+76dfbba0 2026-07-26 manager: adapt theme preview to wide screens
+323a9ca4 2026-07-26 manager: extend navigation badge to superuser and rework home cards
+d1b9f157 2026-07-26 manager: AMOLED theme container fix and hardcoded color cleanup (#3596)
+87a62b76 2026-07-23 build(deps): bump the crates group with 12 updates (#3590)
+82eff37d 2026-07-23 build(deps): bump the npm group in /website with 13 updates (#3589)
+1b03e3e6 2026-07-22 manager: dismiss current snackbar before showing new one (#3587)
+e9e5b616 2026-07-19 kernel: add missing NULL checks on allocation paths (#3572)
+0f208593 2026-07-19 build(deps): bump the crates group across 1 directory with 45 updates (#3586)
+b1c1f9e9 2026-07-19 build(deps): bump the maven group across 1 directory with 6 updates (#3585)
+d601ddf0 2026-07-19 manager: replace HanziToPinyin with icu transliteration
+d523eb32 2026-07-19 ksud: ensure spawn_sulogd don't return in child; execute /proc/self/exe instead of resolving executable path (#3583)
+b6e50f9a 2026-07-17 manager: fix stray quote corrupting saved app profile templates (#3571)
+9200dfb4 2026-07-17 build(deps): bump the npm group across 1 directory with 7 updates (#3579)
+260d60d0 2026-07-17 build(deps): bump actions/setup-node from 6 to 7 in the actions group (#3578)
+c20d48a1 2026-07-17 kernel: register tracepoint handler with minimum priority (#3582)
+16d2f389 2026-07-13 manager: move inline styles out of markdown-body
+ef892995 2026-07-12 chore: make clippy happy (#3574)
+ccfee6dc 2026-07-11 manager: don't force shape change
+dbff91c2 2026-07-11 kernel: add syscall dispatcher patching for x64 (#3562)
+2af1b101 2026-07-11 manager: improve translation
+b8e661cb 2026-07-10 manager: update miuix to 0.9.3 and add module navigation badge
+e6832ed5 2026-07-09 Run boot recevier in separated process (#3567)
+af9e5f58 2026-07-06 manager: optimize superuser list build/sort pipeline
+14ed689f 2026-07-06 manager: keep code-bearing self-overlay apps in superuser list
+b67ba594 2026-07-06 ksud, manager: support backup stock image when patching from file (#3561)
+09c6d09a 2026-07-06 build: allow customize package name and app name when building (#3560)
+b9c3069e 2026-07-06 ksud: boot-patch: only use kmi from boot if ota (#3557)
+824f2f23 2026-07-04 manager: code cleanup and bug fixes (#3552)
+d396ed0d 2026-06-30 manager: redesign M3E theme style 4
+f02f369c 2026-06-30 manager: redesign M3E theme style 3
+b00805d9 2026-06-30 manager: redesign M3E theme style 2
+8fdca3cb 2026-06-30 manager: redesign M3E theme style
+21c094af 2026-06-29 ksud: expose module env vars, docs: initrc injection and rescue guide (#3522)
+36087e2f 2026-06-29 build(deps): bump the crates group across 1 directory with 34 updates (#3546)
+9d71eec8 2026-06-29 ksud: update resetprop, improve prop area rebuild (#3545)
+3e293641 2026-06-29 build(deps): bump the npm group across 1 directory with 26 updates (#3544)
+4916b7cb 2026-06-29 build(deps): bump the maven group across 1 directory with 14 updates (#3537)
+c599dcbf 2026-06-29 build(deps): bump the actions group across 1 directory with 6 updates (#3536)
+36941b9f 2026-06-29 manager: refactor intent handling and introduce URL schema (#3541)
+b0bc817b 2026-06-22 ksud: Adapt resetprop calls to prop-rs-android 0.2.0 (#3532)
+f3dcb849 2026-06-22 ksud: update dependencies
+fda952bf 2026-06-21 manager: bump material3 version to 1.5.0-alpha22
+5517191c 2026-06-21 kernel: Remove strncpy() from the kernel (#3529)
+6c97d1dd 2026-06-18 kernel: Allow domain to use memfd created by ksu domain (#3528)
+f0f4539b 2026-06-17 kernel, ksud: refactor sucompat (#3521)
+5c5518c5 2026-06-14 manager: fix template save & load (#3517)
+3db7a2fc 2026-06-14 manager: optimize icon loading logic and some minor fixes (#3503)
+179ad3da 2026-06-11 ksud: su: add --ksu-no-new-privs option (#3515)
+6a0d7a49 2026-06-11 dev: split output dir for local lkm build
+70f234d6 2026-06-11 dev: remove and ignore kernel/.clangd, add clangd examples
+46ad8dcb 2026-06-10 feature: add KSU_NO_NEW_PRIVS (#3509)
+5dec21c2 2026-06-09 kernel, ksud, manager: implement uapi version (#3455)
+8421ad5f 2026-06-07 mamager: keep PullToRefresh mounted
+e8663398 2026-06-06 manager: flicker-free scroll-to-top and channel-based UI events
+04f2084f 2026-06-05 manager: bump miuix from 0.9.1 to 0.9.2
+849c426b 2026-06-01 manager: optimize miuix theme performance
+778fb38b 2026-06-01 manager: Add device name to status card
+64fb0888 2026-05-29 kernel: Improve late load mode sequence calculation (#3498)
+9ab31068 2026-05-27 kernel,ksud: support module-provided init.rc injection (#3478)
+33dcf82d 2026-05-27 selinux_hide: hide status (#3495)
+b43637ac 2026-05-26 manager: improve snackbar and fix dialog (#3483)
+b3e24952 2026-05-26 ksud: update android_bootimg and preallocate memory for patching
+1bf6ff19 2026-05-26 refactor: use built-in bootimg crate, remove magiskboot (#3467)
+64852a46 2026-05-26 manager: add sort menu to superuser and modulerepo pages
+96a72dd0 2026-05-23 kernel: symbol_resolver: resolve symbol suffix starts with '$'
+4d3c47c9 2026-05-20 manager: Add kallsyms in bugreport (#3479)
+2dc6f1ee 2026-05-20 ksud: fix some module scripts won't add KSU_MODULE environment var (#3445)
+b11be252 2026-05-20 kernel: Prefer hashed .cfi_jt variants before bare symbols (#3475)
+12fb65d0 2026-05-20 Improve GithubMarkdown loading
+7a936a9b 2026-05-20 manager: exit automatically when launched from shortcut (#3476)
+44658b69 2026-05-17 adbroot: support statically-linked GetProperty (#3470)
+da8e0ab1 2026-05-17 kernel: refine symbol_resolver (#3469)
+c764807d 2026-05-17 manager: fix crash in terminal screen (#3474)
+3a1e6ce9 2026-05-16 manager: don't close module action screen automatically
+f261dc4a 2026-05-15 manager: bump miuix from 0.9.0 to 0.9.1
+a1a03972 2026-05-14 ksud: su: support parsing arguments after user (#3464)
+89479c5c 2026-05-14 ci: disable cache-bin in ksud-extra to fix macOS build (#3463)
+c9ba63f6 2026-05-14 manager: show recently installed in superuser search
+1e7bc48c 2026-05-14 kernel: Resolve dotted CFI symbol variants in symbol lookup (#3461)
+3f388ef1 2026-05-11 selinux_hide: fix attr/current detection (#3459)
+0efe3cf0 2026-05-11 feature: selinux hide (#3457)
+f9c7823e 2026-05-10 kernel: simpler implementation of copying policydb (#3350)
+0544f475 2026-05-07 manager: Fix module json url parsing (#3450)
+cc83433b 2026-05-02 kernel: prune redundant avtab nodes after deny rules (#3439)
+8f496b90 2026-05-02 manager: Close temp shell after module action (#3438)
+7fb5fd3e 2026-04-26 fix include change (#3428)
+e50e3b06 2026-04-24 manager: refactor markdown support
+baf88adf 2026-04-24 manager: save pager state in viewmodel
+ed098ec2 2026-04-24 manager: exclude unused libandroidx.graphics.path.so
+2e148da0 2026-04-19 manager: Rename downloaded file if exists (#3425)
+393cfb10 2026-04-19 manager: keep commonmark resources (#3424)
+99739a52 2026-04-17 chore: make clippy happy (#3423)
+12304099 2026-04-15 kernel: refactor allowlist (#3418)
+260fafed 2026-04-12 manager: refactor AboutMiuix pager
+cddbc31a 2026-04-12 manager: fix some issues with miuix style
+cfe6d81a 2026-04-12 manager: fix material search input density and clean up (#3417)
+d21c4436 2026-04-12 kernel: Replace GFP_ATOMIC flags in throne tracker
+6948a44d 2026-04-12 kernel: Fix OOB read caused by missing null terminator
+5fcd78f3 2026-04-12 manager: bump material3 version to 1.5.0-alpha17
+20b7bd26 2026-04-12 manager: adb_root: load our ksurc if possible (#3412)
+a12bf057 2026-04-11 userspace: improve module loading and ksud CLI (#3406)
+71410ccd 2026-04-11 kernel: don't call path_put when kern_path failed (#3410)
+939e36ce 2026-04-10 manager: bump miuix from 0.8.8 to 0.9.0
+a372827b 2026-04-08 manager: fix webui ime insets
+1cd78be3 2026-04-08 fix: add CORS header to ksu://icon/ responses to allow programmatic image loading (#3402)
+402a5be6 2026-04-07 manager: simplfiy material pull to refresh
+a5c357e6 2026-04-06 kernel: Fix building sulog on kernel 6.1 & x86_64 (#3401)
+0e4dafca 2026-04-06 manager: fix miuix update dialog
+92026eef 2026-04-06 manager: fix material template screen refresh
+835d527f 2026-04-04 manager: add missing adb root feature status
+09552c48 2026-04-04 manager: simplify sulog parser
+d4061633 2026-04-03 manager: show seccomp status on Home screen (#3372)
+b3824b58 2026-04-03 ksud: add --kmi for ksud late-load
+bd64f2ea 2026-04-03 docs: Fix formatting of best practice guidelines (#3376)
+f6374a2e 2026-04-03 ci: parallel build manager and other components to reduce build time (#3393)
+9ae97f97 2026-04-03 syscall_hook: Fix building on kernel 6.6 and below (#3383)
+1625043f 2026-04-03 kernel: Fix absolute src handling in Kbuild (#3390)
+70ca1353 2026-04-02 kernel: fix path check in adb root (#3391)
+f73db586 2026-04-02 Revise translation contribution guidelines
+ab5a5ea2 2026-04-02 kernel: Don't advertise webview zygote in umount list (#3389)
+1835fe32 2026-04-01 feature: adb root (#3382)
+e4ebdbe6 2026-04-01 ksud: Change uid references to appid (#3388)
+9e6de0ad 2026-03-31 ksud: fix daemonize
+08378e55 2026-03-31 kernel: mark more functions as init/exit functions (#3380)
+397d3f22 2026-03-31 ksud: minor refactor (#3377)
+bd5cfcae 2026-03-31 manager: extract WarningCard component
+7e54528a 2026-03-31 ksud: remove ksud before update it
+03425977 2026-03-31 manager: fix sulog icon color and string
+4f377674 2026-03-31 Translations update from Hosted Weblate (#3370)
+849c65d3 2026-03-31 manager: add sulog screen (#3373)
+3b65642a 2026-03-31 manager: try fix #3357
+f2adc247 2026-03-30 manager: replace InputField with BasicTextField in SuperSearchBar
+18754602 2026-03-30 kernel: bump app profile version, migrate selinux domain (#3363)
+0560d1ec 2026-03-30 manager: disable icon shrinking in AppIconCache (#3371)
+d13bac52 2026-03-29 kernel: sulog: fix return value (#3364)
+e04f12ec 2026-03-29 kernel: Fix extmod config propagation for manager/policy/debug
+95a31f28 2026-03-29 fix: GKI kernel build
+fb7b6668 2026-03-29 feat(kernel ksud): add sulog (#3360)
+c963aa71 2026-03-29 kernel: fix lsm hook
+45910a5d 2026-03-28 manager: fix material status card color in jailbreak mode
+1576cc33 2026-03-28 kernel: selinux: minify rules
+4da174aa 2026-03-28 ksud: late-load: reopen fd to reset selinux file context after LKM loaded (#3354)
+b8251b05 2026-03-28 manager: use `.dev` package name suffix for pr build
+acbac04d 2026-03-28 ksud: add manager package name option to some commands
+0691d201 2026-03-28 ksud: sepolicy: fix *xperm parsing, support bracket for perm_set (#3353)
+3b6e510f 2026-03-28 [skip ci] fix setup_cargo_config on windows
+e7b6bf08 2026-03-28 kernel: fix copy avtab (#3352)
+73fc1003 2026-03-27 kernel: fix compile for x86-64 linux kernel v6.13- (#3351)
+b3d034da 2026-03-27 ksud: add debug insmod
+25c92eb9 2026-03-27 refact: top level cargo workspace, fix uapi
+2d34d0c4 2026-03-27 ci: run check for dev
+fefa61d5 2026-03-27 kernel: move selinux context to ksu
+bd1b00cc 2026-03-27 kernel: unified uapi header
+02f3c17e 2026-03-27 kernel: sucompat: fallback to sh when ksud is unavailable
+6f609368 2026-03-27 kernel: common symbol resolve tool
+3e271ac4 2026-03-27 kernel: add lsm hook framework
+8c108e1b 2026-03-26 kernel: allow disable manager or policy
+91d0848f 2026-03-26 kernel: reorganize source layout
+e4c10842 2026-03-27 manager: Only trigger side effects after page is settled
+6d008bc5 2026-03-27 manager: Add back appiconloader
+523c3759 2026-03-27 manager: Skip service start if root is available (#3343)
+12b70c49 2026-03-27 Translations update from Hosted Weblate (#3202)
+73a45cb8 2026-03-26 manager: fix remember icon (#3339)
+17367e37 2026-03-26 kernel: use parallel build
+15790ccb 2026-03-26 kernel_umount: fixup printout and avoid UAF (#3338)
+be13df74 2026-03-26 build(deps): bump the crates group across 1 directory with 9 updates (#3221)
+b73fa3d3 2026-03-26 build(deps): bump gradle-wrapper from 9.4.0 to 9.4.1 in /manager in the maven group across 1 directory (#3323)
+1a7434f9 2026-03-26 build(deps): bump the npm group across 1 directory with 29 updates (#3260)
+77174cb3 2026-03-26 build(deps): bump the crates group across 1 directory with 46 updates (#3324)
+9a8e8916 2026-03-26 build(deps): bump the actions group across 1 directory with 4 updates (#3336)
+704bbf37 2026-03-26 manager: Avoid touching CE storage if not unlocked (#3337)
+b2f3c76b 2026-03-25 manager: add haptic feedback to Material UI (#3335)
+02f5e2aa 2026-03-25 manager: optimize app icon cache performance
+50e1d17e 2026-03-25 ci: build / clippy check ksud for android without cross, use ndk 29 (#3251)
+c79511d8 2026-03-25 ksud: fork daemon to run late-load mode (#3334)
+5f9cada6 2026-03-24 kernel: handle ksud execve by syscall_hook_manager, use static_key
+68143c96 2026-03-24 kernel: remove usage of get_current_cred
+2ddeed9c 2026-03-24 kernel: allow exit
+7913e374 2026-03-24 kernel: fmt, we have larger screen now
+a92f8c75 2026-03-24 supercall: perform free_pid() calls for kernel 6.15+ (#3331)
+40e8fb76 2026-03-24 Bring back x86_64 support with a catch (#3328)
+d7bd5f88 2026-03-24 manager: implement foreground service for module downloads (#3326)
+5ce7e088 2026-03-24 ksud: refine resetprop cli (#3330)
+cd3382c8 2026-03-23 manager: add timeout for module update checks
+b8cb06fa 2026-03-23 manager: refresh module list on lifecycle resume
+3a9c18d2 2026-03-23 manager: bump haze inputScale from 0.25f to 0.35f
+2e19c75d 2026-03-23 manager: bump miuix to 0.8.8
+8bc28033 2026-03-23 feat: support switch to init_group (#3322)
+7e568dd3 2026-03-22 feat: ksud-managed emulated soft reboot (#3291)
+6a44f870 2026-03-22 ksud: fix fmt and clippy
+3468172f 2026-03-22 ksu: drop official x86_64 support (#3316)
+3054cc0b 2026-03-22 feat: safe exit (#3317)
+225ffbbf 2026-03-22 kernel: use syscall table hook to avoid running in atomic context
+61c63130 2026-03-22 kernel: fix process marking for built-in mode (#3284)
+ac37c4d5 2026-03-22 manager: fix save log not generating log in material theme
+02adbab7 2026-03-22 ksud: magica: delete ro.boot.selinux and compact after run (#3314)
+ed637c7c 2026-03-21 update prop-rs-android & resetprop
+62fa92b7 2026-03-20 ksud: embeded resetprop impl (#3300)
+3bda2444 2026-03-17 manager: jail break mode check up (#3302)
+ca2799c3 2026-03-16 feature: allow shell & force enable adbd (#3298)
+dfbfdb03 2026-03-15 manager: do not save image when flashing (#3297)
+611d3257 2026-03-15 ksud: magica: Set uid in forked process (#3296)
+c0ade71c 2026-03-15 manager: Improve Markdown WebView handling
+ce3d9054 2026-03-15 ksud: magica: use minify adb_client (#3292)
+1ca5989e 2026-03-15 manager: Change jailbreak mode tag color to errorContainer for better… (#3290)
+02a17ce8 2026-03-15 manager: Improve Blur performance
+6cf238e0 2026-03-15 ksud: refine boot-patch (#3281)
+1b14074c 2026-03-15 manager: clean up intent leftover (#3294)
+f3b4d783 2026-03-15 Update KSU config to require EXT4_FS (#3266)
+8189df8f 2026-03-15 manager: Improve unidirectional data flow
+b2ea1e87 2026-03-15 manager: Adjust module item icon sizing and padding
+3f9496f9 2026-03-14 manager: add long-click to create module shortcut (#3285)
+218502a0 2026-03-14 kernel: Fix RLIMIT_NPROC leak on root escape (#3286)
+bc52a8c3 2026-03-14 manager: Add default LocalContentColor
+31060d37 2026-03-14 manager: Fix some issues caused by miuix 0.8.7
+7ca20f32 2026-03-14 manager: bump miuix to 0.8.7
+98c9bd59 2026-03-13 manager: Require root access for full features
+09cb6585 2026-03-13 manager: Refactor manager screens to unified UiState and actions (#3283)
+65f8cdaf 2026-03-13 kernel: upgrade ddk, use ddk-min (#3280)
+a3dedf93 2026-03-13 manager: Add `NavigationRail` support (#3279)
+c44fe98e 2026-03-12 manager: Enable legacy packaging for dex
+2787576e 2026-03-12 [add device]: All Huawei & Honor devices (Project:KernelSU_on_Huawei) (#3242)
+40275bf3 2026-03-12 manager: Bump min sdk to 31 (#3276)
+4c6ab1e4 2026-03-12 manager: fix some issue in Material theme (#3277)
+249acee9 2026-03-12 manager: fix missing load library
+323df9a7 2026-03-12 manager: bump MINIMAL_SUPPORTED_KERNEL to 32336
+14c462f6 2026-03-12 manager: Add soft reboot (#3272)
+279c7501 2026-03-12 kernel: sepolicy: use GFP_KERNEL (#3271)
+b98c05eb 2026-03-12 feat: jailbreak by Magica (#3268)
+798807a0 2026-03-12 ci: fix push skip
+7f8b2f05 2026-03-12 manager: Revert remove `shortcut_type` intent's extra (#3267)
+9bd4d448 2026-03-12 ci: sign and upload manager when pr (#3269)
+63bcb1b7 2026-03-11 kernel: enforcing selinux at late-load mode
+f0615d3c 2026-03-11 feat: add late-load mode support (#3258)
+221542b6 2026-03-11 kernel: refine stackprotector workaround (#3264)
+6bac4b1b 2026-03-10 kernel: make clang-format happy
+2c1d8158 2026-03-09 kernel: Only check CONFIG_STACKPROTECTOR_PER_TASK on arm64 (#3263)
+b55e282e 2026-03-09 manager: cleanup multi-ui issue (#3246)
+6484caf1 2026-03-08 kernel: add missing attribute
+baf3f7d4 2026-03-01 kernel: Provide own stackprotector symbol if necessary
+9c2b9e48 2026-03-07 ksud & ksuinit: fix wrong GetInfoCmd struct (#3256)
+423eefe3 2026-03-04 Add additional capabilities to nethunter.root (#3252)
+dc1f174a 2026-03-03 ksud: support patch cmdline
+aaa023d2 2026-03-03 manager: restructure for multi-ui support and add Material 3 (#3231)
+28fedfa1 2026-03-01 kernel: Use ksu cred to save allowlist (#3243)
+d39bea26 2026-03-01 manager: Fix the default value of FloatingBottomBarBlur
+0037d7df 2026-03-01 manager: Refactor ViewModels with repository pattern and StateFlow (#3241)
+41204e9b 2026-02-28 manager: Add missing hazeState
+18c0d7f5 2026-02-28 manager: fix multi-user app management and add filtering (#3232)
+dc719b58 2026-02-28 manager: Sync changes from LSPosed manager
+78c2b767 2026-02-28 manager: fix crashes when loading ultra-high resolution app icons (#3227)
+0226b31d 2026-02-27 manager: Fix webview height issue
+177d51a3 2026-02-26 manager: cleanup Downloader and fix warnings (#3229)
+2d54667d 2026-02-23 kernel: Avoid malloc in remove_uid_from_arr() (#3099)
+b84d737a 2026-02-23 fix new allow list limit
+9f68f239 2026-02-23 kernel: use rcu to access allowlist, refactor get allowlist api (#3093)
+c44adc14 2026-02-11 kernel: use correct errno when add_try_umount failed (#3212)
+80d86b48 2026-02-10 manager: Fix padding issues
+8741407a 2026-02-09 manager: Add predictive back gesture switch (#3208)
+975d09a3 2026-02-09 manager: bump miuix to 0.8.1
+fd629a22 2026-02-08 manager: Add global page scale setting
+717614d8 2026-02-06 manager: Re-apply module search filter when the module list changes
+92aff05f 2026-02-04 Translations update from Hosted Weblate (#3200)
+8ef6423b 2026-02-04 manager: Add more monet key colors
+d047ee7a 2026-02-04 manager: Refactor OEM detection for shortcut permission (#3201)
+ab334876 2026-02-04 feat(ui): Add network status handling to template screen
+c95888ff 2026-02-03 manager: Fix some recomposition issues (#3198)
+4566823b 2026-02-03 manager: add animation to page back navigation (#3197)
+097f8324 2026-02-03 manager: optimize BottomBar pagescroll animation (#3196)
+0f5ea2f6 2026-02-03 Translations update from Hosted Weblate (#3145)
+9007ae63 2026-02-02 manager: Refactor WebUI to Compose & Rename enableInsets to enableEdgeToEdge (#3190)
+2ba64dc6 2026-02-02 manager: Allow patching for devices with other different KMI versions (#3185)
+35d81627 2026-02-02 kernel: Fix `setup_selinux` using `__task_cred` directly (#3189)
+2764fc09 2026-01-24 manager: Reduce recomposition on the home screen (#3180)
+bf6fe410 2026-01-24 manager: check module status before executing action or WebUI (#3179)
+7d293d5e 2026-01-22 manager: Use EaseInOut on Pager animateScrollToPage
+7a8c450d 2026-01-21 manager: Navgation3 improve (#3175)
+76ad3c30 2026-01-21 manager: Fix the DeepLinkResolver
+93bbf4eb 2026-01-21 fix(webui): The `internal/colors.css` is empty source when WebUIActivity started by shortcut (#3172)
+b2dc44eb 2026-01-21 kernel: Fix potential memory leaks (#3170)
+13874a61 2026-01-21 manager: Fix crashes caused by serialization [2]
+d0351b01 2026-01-20 build(deps): bump APG from 8.13.2 to 9.0.0 (#3163)
+405d0d4f 2026-01-19 manager: Fix crashes caused by serialization
+7790a936 2026-01-19 manager: Improve predictive back feel
+dff06296 2026-01-19 manager: Migrate to navigation3 + navigationevent (#3164)
+4d396fda 2026-01-18 Merge branch 'YunZiA-miui-anim'
+cc592109 2026-01-18 manager(refactor): change kernel umount to a switch preference, figure the sucompte string problem (#3146)
+2dddfa28 2026-01-18 manager/userspace: Add desktop shortcut support for module action/webui (#3159)
+2ce13026 2026-01-18 manager: Add expandable module description support (#3161)
+9179f43a 2026-01-15 kernel: add bazel workaround back (#3157)
+139b8139 2026-01-14 manager: remove Coil dependency and add OkHttp directly (#3154)
+0fe78fcb 2026-01-14 kernel: improve Git repository detection for KernelSU versioning (#3108)
+1500e442 2026-01-12 kernel: Use more reasonable symbol name for newfstatat
+9e233aa7 2026-01-12 kernel: Fixing symbol names causing x64 kernel compilation failure (#3147)
+07441ea1 2026-01-10 Translations update from Hosted Weblate (#3124)
+df640917 2026-01-10 kernel: ksud: Refine rc injection, fix issue of Android Canary 2601
+8fab2e50 2026-01-10 ksud: Update resetprop from Magisk v30.6 (#3144)
+439702a4 2026-01-09 kernel: Clean up selinux.c (#3132)
+33290e1c 2026-01-07 manager: Fix a crash (#3140)
+d54c89d0 2026-01-06 manager: add file chooser support to WebUI (#3139)
+84f0f020 2026-01-05 kernel: check package name before check manager signature (#3134)
+f8c13fa9 2026-01-05 selinux: Cache SID lookups for domain checks (#3128)
+c236170f 2026-01-03 manager: Destroy webview when closing the module repo details page
+5f751149 2026-01-02 manager: Fix ROOT tag refresh
+74c6edd6 2026-01-02 manager: fix ksu.fullScreen (#3126)
+ce7dffb6 2026-01-01 kernel: Explicitly check zygote start in execve hook (#3113)
+1b6e2ed6 2025-12-31 kernel, ksud, manager: Remove enhanced security feature (#3123)
+b355b82a 2025-12-31 workflow: remove unnecessary strings (#3120)
+521856e7 2025-12-31 kernel: fix Wcalloc-transposed-args (#3121)
+68b98a29 2025-12-30 manager: Fix webview card height issue again
+f99810f4 2025-12-30 manager: Allow module repos README horizontal scrolling
+26362ef3 2025-12-30 manager: Add module repos README loading indicator
+2f150e77 2025-12-30 manager: Improve RTL support
+7316d8b2 2025-12-30 manager: Fix webview card height issue
+d12077f5 2025-12-29 manager: expose exit to javascript interface (#3112)
+d80f8223 2025-12-29 kernel: Ensure manager is valid before installing fd (#3115)
+a8070f2e 2025-12-28 build(deps): bump the actions group across 1 directory with 4 updates (#3067)
+e0050291 2025-12-28 Translations update from Hosted Weblate (#3049)
+f71d0115 2025-12-28 kernel: use selinux_cred() method instead of directly use cred->security (#3111)
+42175150 2025-12-26 kernel: append to init.rc instead of prepending to atrace.rc (#3107)
+10535c2c 2025-12-25 Revert "Revert "ksuinit: use upstream"" (#3105)
+1cbfc864 2025-12-25 Revert "ksuinit: use upstream" (#3104)
+c27263e7 2025-12-24 ksud: update dependencies (#3096)
+453cc4ac 2025-12-23 manager: fix all warnings (#3098)
+017c955e 2025-12-23 ksuinit: use upstream (#3095)
+64140611 2025-12-22 ksuinit: update dependencies and migrate to 2024 (#3088)
+07d9401b 2025-12-22 kernel: fix kvrealloc compatibility (#3089)
+6e9cfa78 2025-12-21 kernel: use kvrealloc
+8d73cfaa 2025-12-21 bot: add warning info of dev branch
+92526491 2025-12-21 js: add insets documentation and function (#3084)
+3385b100 2025-12-21 manager: add webview padding if no request from insets css (#3083)
+1b7700c3 2025-12-21 manager: Prevent module installation via external sources in safe mode (#3079)
+2c46f118 2025-12-20 manager: Fix marking refresh on module install and update (#3082)
+3d73f892 2025-12-20 kernel: Allocate fake struct on heap (#3081)
+5ab71b41 2025-12-20 manager: Remove androidCmakeVersion
+a427f234 2025-12-20 manager: Allow userScrollEnabled only when KSU is available
+f70dee84 2025-12-19 kernel: release seccomp filter (#3077)
+884e1317 2025-12-18 kernel: setuid_hook: Remove unused includes and function (#3072)
+0cdeb966 2025-12-17 kernel: Refactor file_wrapper (#3070)
+91ed4eaf 2025-12-16 kernel: fix check format again (#3071)
+5fd3e6da 2025-12-16 manager: build(deps): Bump miuix to 0.7.2
+67833c2c 2025-12-16 kernel: fix root_groups defs (#3028)
+c95c2d79 2025-12-15 Add mount namespace support 添加挂载命名空间支持 (#2909)
+d38206b3 2025-12-15 fix manager crash when switch pages too fast (#3065)
+be63f0a2 2025-12-13 remove some unused files (#3034)
+53e4a617 2025-12-13 ci: Correct the file paths checked by clang-format; change trigger path in clang-format workflow (#3063)
+f83e7730 2025-12-13 kernel: reformat codes, add workflow to check format (#3062)
+64a97f42 2025-12-10 manager: Add missing navPadding
+93ac6011 2025-12-10 manager: Move the module repos back to the module subpage.
+b5507fa8 2025-12-10 manager: Fix fab icon color
+46492b77 2025-12-10 manager: Remove module repos update check
+c17db0cb 2025-12-09 manager: Refactor Markdown composable to use FrameLayout (#3059)
+30792443 2025-12-09 ksud: Decrease log level on release build (#3058)
+83f2588c 2025-12-09 manager: clean GithubMarkdown
+17a7a6fa 2025-12-08 kernel: Install manager fd in task work (#3057)
+05d5add3 2025-12-08 ci: move ksuinit build to a single workflow (#3054)
+50bc30d0 2025-12-07 refactor(ksud): extract android-only logic (#3048)
+3d353e26 2025-12-07 kernel: Use GFP_ATOMIC for atomic context (#3052)
+495638e7 2025-12-06 manager: Enable HorizontalPager user scroll
+23bb6a2a 2025-12-06 manager: Fix a crash when openUri
+eaa2be9c 2025-12-06 manager: fix #3050
+6caf5429 2025-12-06 manager: Refactor GithubMarkdown render
+d0d5e4a5 2025-12-06 kernel: Identify manager without PER_USER_RANGE (#3038)
+ebebae55 2025-12-05 ci: Fix cargo deps
+fec0bacf 2025-12-05 ci: Run rust checks for ksuinit and fix them
+351153f0 2025-12-05 ci: add ksuinit (#3026)
+2159d0fb 2025-12-05 kernel: use $(CC) for check_symbol target (#3041)
+4e2cee4e 2025-12-05 manager: fix superuser/module card nav
+ab9cd323 2025-12-05 manager: add missing filtering in superuser page (#3039)
+05fe347f 2025-12-04 manager: Refactor module repos again
+d1062065 2025-12-04 kernel: check lkm symbols (#3035)
+0c85c9d8 2025-12-04 templates: add hyperceiler root template (#3036)
+b5c11359 2025-12-04 manager: filter ksuapp in superuser screen (#3033)
+fb3fc2fb 2025-12-03 kernel: use our cred to unmount, remove sepolicy of zygote (#3032)
+23f0a744 2025-12-03 support kernel 6.18 (#2999)
+6e918fc8 2025-12-03 kernel: escape to ksu domain in execve hook, remove sepolicy between … (#3031)
+0b243c24 2025-12-02 kernel: Remove sepolicy of kernel domain
+aebdf519 2025-12-01 Fix another id_ID Translation (#3015)
+1a4a4744 2025-11-30 ksud: more verbose log (#3021)
+26c6c5f0 2025-11-30 kernel: Remove second stage init handling for old system
+f83eb08a 2025-11-30 manager: Use moveTaskToBack instead of finishAndRemoveTask
+0dc4c0a8 2025-11-30 ksud: Add process info in bugreport (#3014)
+9a4b2d8e 2025-11-30 manager: Add network check
+1ad5ef3c 2025-11-29 kernel: Move kernel part build rules from Makefile to Kbuild (#3003)
+ef61af05 2025-11-29 manager: fix webui load indefenitely if app list is not initialized (#3012)
+cf0bb45f 2025-11-29 release v3.0.0
+84b3f492 2025-11-29 update docs for deprecated warning
+5c44a58e 2025-11-29 remove add-device and other stuff
+88c0d23a 2025-11-29 manager: Add GKI mode WarningCard
+385ef5b9 2025-11-29 remove gki image build
+6564c4ed 2025-11-29 manager: show changelog from module repos
+b3d58209 2025-11-29 manager: Refactor module repos
+44450d31 2025-11-29 add hasFragileUserData to keep manager data when uninstall (#3005)
+79f6c12b 2025-11-29 Translations update from Hosted Weblate (#2963)
+c276b734 2025-11-29 ksud: Remove warning for non-tty std
+a3f68133 2025-11-27 manager: fix the color of TextField in TemplateEditor
+fdf8886a 2025-11-27 manager: add new AID
+26a166ba 2025-11-27 manager: add markdown-ext-tables
+dfc54110 2025-11-27 manager: fix Markdown table rendering
+aa6bb39f 2025-11-27 userspace: add `feature get --config`
+4355ff4a 2025-11-27 manager: redo fetchAppList onCreate
+97980e66 2025-11-27 manager: add basic module repo support 2
+08edce3b 2025-11-27 kernel: Fix execve filename access on ARM64
+d00b4cc0 2025-11-27 manager: add basic module repo support
+fa793c00 2025-11-27 manager: fix dark theme color
+a20651bd 2025-11-27 manager: fix SearchPager color
+a3eaab2f 2025-11-27 manager: upgrade ndk29
+13e33af4 2025-11-26 kernel: Add preempt_{disable|enable}_notrace for MODULE
+2e877d54 2025-11-26 sucompat: Fix execve filename access on ARM64
+ea1fc66b 2025-11-26 manager: provide monet color to webui (#2981)
+9878d1a9 2025-11-25 manager: Add confirmation dialog for ZIP module installation via external sources (#2989)
+5007bea7 2025-11-25 kernel: Remove unreachable vfs_statx handling
+e33491f2 2025-11-24 ksud: refine boot patch, add `--out-name` arg to boot-patch and boot-restore command (#2982)
+20c0360e 2025-11-23 Remove meta-overlayfs from Dependabot (#2974)
+e1e58ed7 2025-08-24 kernel: Unmount all isolated process which forks from zygote
+cf42e0f9 2025-11-23 kernel: remove unused guard
+5947eac4 2025-11-22 docs: Add overide description tips
+7c716521 2025-11-22 docs: add module configuration guide and locale links
+2fab6775 2025-11-22 ksud: fmt
+59295590 2025-11-22 ksud: Set KSU_MODULE only for module script (#2971)
+aa7752ba 2025-11-22 docs: update module config docs
+58b85bdf 2025-11-22 ksud: config set support read from stdin, and less restriction
+9db37517 2025-11-22 build(deps): bump androidx.activity:activity-compose from 1.11.0 to 1.12.0 in /manager in the maven group across 1 directory (#2964)
+4584217b 2025-11-22 manager: add support for opening and flashing zip files directly (#2967)
+186758d4 2025-11-22 ksud: larger config value size limit, update docs
+714a6e88 2025-11-22 docs: Add module_config description
+4940cd15 2025-11-22 chore(ksud): enable clippy::all, clippy::pedantic && make clippy happy (#2970)
+ef816a3e 2024-11-23 manager: no need to check overlayfs
+eb8ce759 2025-11-21 manager: try fix HyperOS2- edgeToEdge
+875c64c0 2025-11-21 manager: make inset synchronize
+3e8b4a7e 2025-11-21 meta-overlayfs: Moved to module repo
+926f64d3 2025-11-21 ksud: Use regex to validate module id (#2968)
+5e1979d2 2025-11-21 metaovl: Fix incorrect permission, Add updateJson and changelog
+be44ee05 2025-11-20 add module config, migrate managedFeatures (#2965)
+4f97c240 2025-11-20 meta-overlayfs: quote rel path removal
+d868c569 2025-11-20 metaovl: copy selinux context when install
+8c5cbdd3 2025-11-20 manager: fix dark mode color issue
+b530dec3 2025-11-20 metaovl: Use xcp to copy image faster.
+f0a64f36 2025-11-20 metaovl: use `cp` instead of `mv` to copy files
+09b2dc69 2025-11-20 Embrance AGENTS.md
+88fe949d 2025-11-20 manager: Support monet colors
+048e74e9 2025-11-19 ksud: make rustix version fixed
+e6fc3f52 2025-11-19 manager: fix dialog text of multiple modules install
+21259836 2025-11-19 meta-overlayfs: avoid moving skip-mount modules
+51072a19 2025-11-19 ksud: Fix the metamodule's non-meta stage script, which is executed twice.
+fa8afe47 2025-11-19 Add meta-overlayfs to Dependabot (#2956)
+7ecd07c9 2025-11-19 docs: update website docs
+cb2bf6f4 2025-11-19 Translations update from Hosted Weblate (#2917)
+55a4cfc7 2025-11-19 docs: Update documentation to reflect metamodule architecture
+7f0bc411 2025-11-19 Add undo uninstall module feature 添加撤销卸载模块功能 (#2920)
+f8e827cd 2025-11-19 ksud: Fix the issue where a newly installed module is not uninstalled after being immediately removed and rebooted.
+3ed7125d 2025-11-19 ksud: 1. Handle module upgrade first; 2. Ensure that disabling persists across module upgrades.
+1755608d 2025-11-18 ksud: Fix the blocking installation issue; it is not working with a fresh installation of the metamodule.
+4b94c8ef 2025-11-18 manager: add inset support to webui (#2952)
+f40b2be6 2025-11-18 ksud: respect `skip_mount`
+65a2c968 2025-11-18 ksud: Add `mount` flag for module list
+0a05b436 2025-11-18 userspace: add missing update flag
+6609ea44 2025-11-18 Prevent regular installs when metamodule unstable
+4a18921b 2025-11-18 kernel: expose umount list to ioctl interface (#2950)
+f0d56e1c 2025-11-17 kernel/ksud: Fix KSU_IOCTL_NUKE_EXT4_SYSFS definition
+493ad244 2025-11-17 manager: remoove module shrink
+13590981 2025-11-17 ksud: add modules_update back (#2948)
+8659b9ef 2025-11-17 ksud: Add cli interface for nuke_ext4_sysfs
+ee42d6f3 2025-11-17 kernel: Add nuke_ext4_sysfs interface
+1253ec3e 2025-11-17 manager: add blur to topappbar
+b68f88d8 2025-11-17 website: Add metamodule menu
+3630d670 2025-11-17 support metamodule, remove built-in overlayfs mount (#2929)
+4b051381 2025-11-17 manager: add reboot popup to Module page
+2061b291 2025-11-16 manager: do not fetchAppList onCreate
+904bb17e 2025-11-16 library: new SuperUser UI 2
+51d494f7 2025-11-16 kernel: Replace kmalloc() usages with kzalloc() (#2939)
+77bfbfbb 2025-11-16 library: new SuperUser UI
+9ce9309f 2025-11-15 manager: some UI improvements
+463afa74 2025-11-15 kernel: file_wrapper: copy mode of original inode
+d7b79b61 2025-11-15 kernel: no need to remark process on post-fs-data and boot-completed
+38f2b7fd 2025-11-15 manager: show sharedUserId in AppProfile
+e3b0da1d 2025-11-15 manager: fix webui package manager
+bb2cf901 2025-11-15 manager: display the same UID as a group (#2933)
+5f872ee6 2025-11-15 kernel: Prune allowlist only after boot completed
+901620be 2025-11-15 feat(ksud): Optimize ensure_dir_exist and do not hardcode path (#2932)
+6615068a 2025-11-14 ci: fix android16-6.12 gki build (#2931)
+ab3840a3 2025-11-14 js: provide package manager function and documentation (#2930)
+2ab61520 2025-11-14 manager: introduce webui package manager api (#2928)
+c6102818 2025-11-13 userspace: remove vendor_boot selection logic
+6915b62b 2025-11-13 kernel: refine syscall_hook_manager
+12db7fff 2025-11-13 kernel: fix zygote mark on first boot (#2924)
+7244cd8f 2025-11-12 manager: install: do not always recommended to select boot partition if not rooted
+a4870e52 2025-11-12 kernel: refine file wrapper
+a5d826e7 2025-11-12 kernel: fix wrong show_fdinfo impl
+58fc3fd2 2025-11-11 kernel: Fix task flag marking for root and shell UID
+be302062 2025-11-11 manager: fix template status display issue (#2910)
+dd5a5f9d 2025-11-10 Translations update from Hosted Weblate (#2879)
+c56a7068 2025-11-10 kernel: Use task work to install fd
+826369d7 2025-11-10 manager: Fix export log toast crash by showing Toast on main thread (#2904)
+34088445 2025-11-09 kernel: Don't save allowlist on module exit
+21a4375f 2025-11-09 fix missing header
+32a10781 2025-11-09 manager: simplify find boot image (#2901)
+6b4e95a6 2025-11-09 manager: add missing partition selection icon
+57e5f097 2025-11-09 userspace: reuse choose_boot_device
+17a66e01 2025-11-09 ci: move workflow_dispatch to versioned ci workflow
+d2466eb7 2025-11-09 ci: fix ci
+37e85ac3 2025-11-09 update ci
+72763e06 2025-11-09 website: fix Japanese translation of installation guide (#2897)
+13390ba1 2025-11-09 manager: if manager incompatible with current kernel, don't save ksud (#2895)
+0709b30e 2025-11-09 manager: fix KsuCli cmd
+37fa8fcb 2025-11-09 manager: install: add choose partition support (#2896)
+559be414 2025-11-09 Clean up kernel code (#2898)
+236ed38c 2025-11-09 Fix rustfmt warning
+93d565e2 2025-11-08 cli: add ksud debug mark
+db1732a1 2025-11-08 log freely
+04722948 2025-11-08 update setuid_hook, remove uneeded sucompat enable
+b9dcb3ea 2025-11-08 remove reboot from check_syscall_fastpath
+abf6f490 2025-11-08 update mark rules, add init mark tracker
+2cf4ace0 2025-11-08 refactor: kernel_umount setuid_hook
+f654fd5a 2025-11-08 move reboot hook to supercall.c
+bcc4c1fe 2025-11-08 use kprobe for reboot hook
+b7df9a0d 2025-11-08 add zygote to hook target
+d8f8f316 2025-11-08 unified hook manager
+0c91af7f 2025-11-08 refact: use app_profile
+156b510d 2025-11-08 on_module_mounted in ksud.c
+ebea31da 2025-11-08 clean unused header
+e5f43a34 2025-11-08 kernel: fix put_task if alloc failed.
+c3e68368 2025-11-08 use proxy file for pts (#2886)
+8d668076 2025-11-08 Fix missing unlock on error path
+5592dc09 2025-11-08 kernel: fix save allowlist
+b161b82a 2025-11-08 kernel: remove unused kernel_compat
+5c48b935 2025-11-08 kernel: Use real_parent to avoid interference from ptrace.
+bd6a6e7d 2025-11-08 kernel: remove unused wrapper for
+bc352398 2025-11-08 kernel: remove ksu_compat_{open,read,write} because we're in the right context now
+e4aca5fb 2025-11-08 kernel: remove workqueue for allowlist
+2b4f88f8 2025-11-07 Use force_sig(SIGKILL) to kill process
+519f05da 2025-11-07 kernel: Refactor selinux/selinux.c (#2881)
+0e346e69 2025-11-07 Switch kretprobe to heap (#2880)
+2762487d 2025-11-07 Replace mutex with spinlock for tracepoint registration (#2882)
+51dbc670 2025-11-07 manager: bump miuix from 0.6.0 to 0.6.1
+0c8c1f4d 2025-11-07 Translations update from Hosted Weblate (#2876)
+dd38a6c4 2025-11-07 ci: update build
+0b37c16c 2025-11-07 manager: bump miuix to v0.6.0
+d9b651f0 2025-11-07 manager: fix where the option displays "Temporary enable" after device reboot
+d3a09fa0 2025-11-07 build: remove -Wno-implicit-function-declaration
+08b8b599 2025-11-06 Revert "kernel: remove unused workqueue"
+39260912 2025-11-06 revert: still using workqueue for allowlist
+03a3ee5e 2025-11-06 skip init_features in safe mode
+c0a24a0d 2025-11-06 fix: enhanced security register
+c1937c15 2025-11-06 kill pgrp in enhanced security
+8da8f336 2025-11-06 Translations update from Hosted Weblate (#2875)
+5befc129 2025-11-06 add mutex for sucompat mark
+a826828d 2025-11-06 fix: sucompat (#2874)
+b64f10de 2025-11-06 manager: some ui changes (#2870)
+4bb2dae3 2025-11-06 kernel: clean headers
+d6ea1814 2025-11-06 kernel: Set the tracepoint flag in a tracepoint manner
+1810586b 2025-11-06 feature: add enhanced security (#2873)
+b1140628 2025-11-06 manager: remove outdated lkm condition
+9060e618 2025-11-06 kernel: remove unused workqueue
+8c5f485f 2025-11-06 fix sepolicy patch hint (#2872)
+b4cb1ecd 2025-11-06 fix: mark tif (#2871)
+4b655768 2025-11-06 Update Kernel Patches (#2868)
+bfb767bb 2025-11-06 kernel: use sys_enter tracepoint for sucompat (#2866)
+fa3d8589 2025-11-05 support mainline kernel (#2869)
+ceed3f03 2025-11-05 Support building for kernel 6.14+  (#2662)
+562a3b9b 2025-11-05 kernel: supercall: allow escalation on ioctl interface (#2862)
+bdc2aa30 2025-11-05 Fix legacy prctl check condition (#2864)
+ba6b4f29 2025-11-05 Translations update from Hosted Weblate (#2636)
+1565f4ba 2025-11-05 v2.0.0
+0ea19255 2025-11-04 ksubot: add branch, happy 2k
+5284bb13 2025-11-04 kernel: init/exit umount feature
+7c150fe1 2025-11-04 kernel: rework umount with task_work
+33ea7c22 2025-11-04 Revert "Implement workqueue for unmounting"
+5c4c39af 2025-11-04 ksud: clippy
+5aff6419 2025-11-03 ignore user settings
+7320af71 2025-11-03 rename to managedFeatures
+dc063292 2025-11-03 manager: fix suggest boot partition if we've root.
+a0d56562 2025-11-03 manager: fix legacy get version
+8bfae03f 2025-11-03 add check_managed_features to installer.sh
+29f2bcb1 2025-11-03 ksud: add managed_feature
+31737708 2025-11-03 manager: improve local LKM selection
+8c272b13 2025-11-03 fix: get legacy version
+d0747169 2025-11-03 add legacy get_version
+d1250401 2025-11-04 bump ddk to 20251104, fix android16-6.12 lkm
+c7f16d9d 2025-11-04 Reapply: "kernel: Allow to use in Private Space" (#2857)
+e5b05bd9 2025-11-03 Change Dependabot update schedule from daily to weekly
+ef753756 2025-11-03 ci: build dev manager (#2851)
+e3f3b9b3 2025-11-02 kernel: remove dynamic alloc in feature
+11bf91f7 2025-11-02 update embed ksuinit to v2
+c47c74a2 2025-11-02 kernel: disable setuid debug log
+7e7f5692 2025-11-02 use cap_task_fix_setuid hook to avoid inline issue
+744afa07 2025-11-02 ci: skip dup lkm build
+f263dec1 2025-11-02 update ioctl macro (#2850)
+f1e4676d 2025-11-02 ksud: cargo fmt
+f046e957 2025-11-02 ksud: Fix no ramdisk boot.img, close #2766
+afeaa77b 2025-11-02 ksud: clippy
+e46b0929 2025-11-02 fix
+84d9d7d3 2025-11-02 add name and print command value
+799b5edd 2025-11-02 manager: add kernel_umount switch (#2848)
+6dbefcf2 2025-11-02 add android16-6.12 ci
+379f8910 2025-11-02 fix security_task_fix_setuid_handler_pre
+b2bc8bcf 2025-11-02 add feature command to ksud
+37b15e56 2025-11-02 do not expose perm checker
+9c55daed 2025-11-02 more clean perm_check functions
+1cf3185d 2025-11-02 allow root to get/set feature
+95b5a9b7 2025-11-02 use 32bit feature id
+19113269 2025-11-02 add feature max to get_info
+871b703c 2025-11-02 add fixme
+61584874 2025-11-02 fix
+12c2ce2a 2025-11-02 use 64bit feature
+28bdd70d 2025-11-02 refact: use feature subsystem
+068bbc93 2025-11-02 switch ns umount
+ec0e5da4 2025-11-01 Implement workqueue for unmounting
+8165d5b8 2025-11-02 back to kprobe setuid hook
+e9b232f3 2025-11-02 kernel: remove unused
+de8f1baf 2025-11-01 fix ksucalls, same now
+d97d01ef 2025-11-01 build(deps): bump the maven group across 1 directory with 7 updates (#2824)
+b657584e 2025-11-01 build(deps): bump the npm group across 1 directory with 33 updates (#2827)
+eb0afcc6 2025-11-01 build(deps): bump the actions group across 1 directory with 7 updates (#2829)
+2a434891 2025-11-01 Fix ksud build, take 4 (#2846)
+21199595 2025-11-01 Fix ksud build, take 3 (#2842)
+906e5f22 2025-11-01 fix: a lot again (#2845)
+96fe75ec 2025-11-01 fix: a lot (#2843)
+d5bc23a2 2025-11-01 Fix ksud build (#2841)
+85e033c9 2025-11-01 manager: bump minimal supported kernel.
+cf0b5614 2025-11-01 format: update clang-format, 4 spaces save the world
+5f975e86 2025-11-01 new supercall impl (#2835)
+3138651a 2025-10-30 kernel: fix compile below 6.0
+5ac010d2 2025-10-30 kernel: fix compile
+cf031b48 2025-10-30 kernel: replace renameat hook with fsnotify
+812de3fe 2025-10-29 ci: Fix LKM version number anomaly and Git ownership issues (#2832)
+152eefa0 2025-10-27 Add another translation in `id_ID` (#2797)
+4851a97f 2025-10-27 templates: update translation (#2761)
+c7973f91 2025-10-27 initial fastlane structures from IzzyOnDroid (#2715)
+3f518243 2025-10-27 ci: move workflows to top-level and fix workflow references (#2828)
+0390ef5d 2025-10-19 [skip ci] kernel: fix out-of-tree building (#2819)
+c9271cd3 2025-10-19 Fix incorrect function names in non-GKI integration documentation (#2722)
+cf361a7a 2025-10-19 ci: use ddk for faster ci, manual gki image build (#2817)
+7dd88182 2025-10-18 Fix kernel panics caused by thread info flag corruption
+f130f757 2025-10-18 remove ksu tmp (#2815)
+13647100 2025-10-16 Don't write newline character to cgroup node (#2804)
+9de6f4fe 2025-09-29 manager: Allow module update info to scroll naturally (#2784)
+38663f1a 2025-09-29 manager: Refactor module and superuser UI (#2783)
+37ef0d27 2025-09-25 Revert "Unmount isolated process which forks from zygote unconditionally" (#2776)
+e8140a4c 2025-09-23 website: Add ads
+78e3ec18 2025-09-13 Tweak shizuku template description (#2746)
+4d3560b1 2025-09-07 Unmount isolated process which forks from zygote unconditionally (#2747)
+df795746 2025-09-05 fix 'for' loop problem (#2745)
+66d11887 2025-09-01 update resetprop (#2733)
+98f5aade 2025-08-31 Strip JNI debug logs on release build (#2732)
+55820e49 2025-08-30 manager: Support search module (#2730)
+4f9ed2a6 2025-08-30 manager: Add uninstall 2nd confirm (#2729)
+f053dca2 2025-08-26 manager: Fix some issues (#2725)
+f804b7c6 2025-08-25 manager: fix button issues in module cards (#2719)
+3e18a7ac 2025-08-25 manager: switch ui to miuix design style (#2710)
+2a1741de 2025-08-24 Revert "Handle unmount for isolated process correctly" (#2718)
+49b7c670 2025-08-24 Handle unmount for isolated process correctly (#2696)
+a41bcf79 2025-08-24 Reset seccomp filter count when escaping to root (#2708)
+1ccdbc2b 2025-08-13 kernel: selinux: rules: Micro-optimize get_policydb() and fix illegal RCU lock usage in handle_sepolicy() (#2695)
+539d44b8 2025-08-12 Update resetprop from Magisk v30.2 (#2700)
+67fa81b6 2025-07-20 ksud: support vendor_boot patching for some odd devices (#2650)
+6c61a8b7 2025-07-18 ksud: make clippy happy (#2683)
+ee72b8e1 2025-07-14 feat(ui): improve predictive back animations (#2675)
+9034086a 2025-07-11 kernel: added new prctl CMD_GET_MANAGER_UID to get the uid of the crowned manager (#2673)
+9014c663 2025-07-10 kernel: selinux: rules: Fix illegal RCU lock usage in apply_kernelsu_rules() (#2646)
+9a64eaa9 2025-06-27 manger: fix lkm detection (#2654)
+fb8e3bc4 2025-06-14 Update FUNDING.yml
+211e4645 2025-06-13 kernel: core_hook: fix refcount leaks on try_umount (#2635)
+0fe72a81 2025-06-13 build(deps): bump the maven group across 1 directory with 7 updates (#2629)
+46101c5b 2025-06-13 Translations update from Hosted Weblate (#2587)
+d702e746 2025-06-12 kernel: throne_tracker: avoid cross-fs traversal using s_magic check (#2633)
+5bbac4e8 2025-06-12 Switch to prepare_creds/commit_creds (#2631)
+0b6998b4 2025-06-09 throne_tracker: avoid cross fs access (#2626)
+a2787860 2025-05-31 build(deps): bump the maven group across 1 directory with 4 updates (#2612)
+d8ce238c 2025-05-20 Add a formatting string for the update list #2556 (#2597)
+1dbaeaaa 2025-05-18 Revert "website: Fix ads"
+c5d8c567 2025-05-17 Fix fallback option for createRootShell() (#2593)
+dfb03c72 2025-05-17 Update zip-extensions and set needed features for zip (#2592)
+e5f2ad88 2025-05-17 ci: update kmi versions (#2591)
+fd6f839d 2025-05-16 ksud/installer: /odm handling (#2513)
+6bf27395 2025-05-16 build(deps): bump the maven group across 1 directory with 12 updates (#2579)
+763a4dff 2025-05-16 build(deps): bump the crates group across 1 directory with 53 updates (#2585)
+b105a51b 2025-05-16 build(deps): bump the npm group across 1 directory with 24 updates (#2586)
+fb425873 2025-05-15 Translations update from Hosted Weblate (#2558)
+5deb1eef 2025-05-16 website: Fix ads
+8c88027a 2025-05-15 kernel/throne_tracker: we just uninstalled the manager, stop looking for it (#2584)
+2d6890ce 2025-05-03 manager: hide root related features if kernelsu not available (#2555)
+19468766 2025-05-02 ci: Update lkm kernel version (#2567)
+61c0f7f8 2025-04-22 ci: Update llvm version for chrome arcvm kernel build (#2551)
+b03a2de0 2025-04-21 ci: Fix ubuntu-20.04 deprecation
+9b4a08c2 2025-04-21 build(deps): bump the npm group across 1 directory with 22 updates (#2542)
+b3fd5fd5 2025-04-21 build(deps): bump the maven group across 1 directory with 11 updates (#2538)
+fdcc0f34 2025-04-21 [add device]: Samsung Galaxy A15 4G (sma155f) (#2543)
+1cc0dd69 2025-04-09 [add device]: Samsung M30s (M307F) (#2524)
+ad004d48 2025-04-09 Fix opuls -> oplus typo (#2536)
+650c3006 2025-03-28 website: Update Galaxy A05 to Galaxy A05/A04 repository link (#2527)
+cfbbded6 2025-03-26 Fix off-by-one when iterating dir (#2530)
+4ea7c4c8 2025-03-25 Fix su --shell argument handling (#2529)
+c28411bc 2025-03-15 Skip staging package when searching manager (#2511)
+97b24113 2025-03-12 Revert "kernel: remove unused CONFIG guard becuase GKI kernel enable kprobe by default" (#2495)
