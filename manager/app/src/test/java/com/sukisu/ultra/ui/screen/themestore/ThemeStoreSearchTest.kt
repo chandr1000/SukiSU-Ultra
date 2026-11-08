@@ -49,4 +49,34 @@ class ThemeStoreSearchTest {
         assertFalse(item.matchesSearch("dark"))
         assertFalse(item.matchesSearch("pink missing"))
     }
+
+    @Test
+    fun matchesAuthorHandleWrittenWithSeparatorsOrAtSign() {
+        assertTrue(item.matchesSearch("@neko"))
+        assertTrue(item.copy(entry = item.entry.copy(author = "ne ko")).matchesSearch("neko"))
+        assertTrue(item.copy(entry = item.entry.copy(author = "ne_ko")).matchesSearch("neko"))
+    }
+
+    @Test
+    fun matchesAuthorWithFullWidthOrInvisibleCharacters() {
+        assertTrue(item.copy(entry = item.entry.copy(author = "\uFF4E\uFF45\uFF4B\uFF4F")).matchesSearch("neko"))
+        assertTrue(item.copy(entry = item.entry.copy(author = "ne\u200Bko")).matchesSearch("neko"))
+    }
+
+    @Test
+    fun matchesAuthorIgnoringDiacritics() {
+        assertTrue(item.copy(entry = item.entry.copy(author = "N\u00E9ko")).matchesSearch("neko"))
+    }
+
+    @Test
+    fun adaptiveFlagMatchesTheLocalizedLabelWithoutATag() {
+        val adaptive = item.copy(
+            entry = item.entry.copy(
+                tags = emptyList(),
+                adaptive = true,
+            ),
+        )
+        assertTrue(adaptive.matchesSearch("自适应", "自适应主题"))
+        assertTrue(adaptive.matchesSearch("adaptive", "自适应主题"))
+    }
 }

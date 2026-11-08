@@ -40,6 +40,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,6 +65,7 @@ import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Palette
+import com.sukisu.ultra.ui.component.Storefront
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Style
@@ -103,6 +105,9 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.miuix.AppCard
 import com.sukisu.ultra.ui.component.miuix.AppScaffold
 import com.sukisu.ultra.ui.component.miuix.ScaleDialog
+import com.sukisu.ultra.ui.component.bottombar.BottomBarDestination
+import com.sukisu.ultra.ui.util.BottomBarIconSlot
+import coil.compose.AsyncImage
 import com.sukisu.ultra.ui.component.HomeCardStickerStage
 import com.sukisu.ultra.ui.component.HomeCardStickerThumbnail
 import com.sukisu.ultra.ui.component.themeimport.ThemeExportDialog
@@ -116,6 +121,10 @@ import com.sukisu.ultra.ui.util.BlurredBar
 import com.sukisu.ultra.ui.util.BuiltinAppIcons
 import com.sukisu.ultra.ui.util.HomeCardSticker
 import com.sukisu.ultra.ui.util.HomeCardStickerTransform
+import com.sukisu.ultra.ui.util.HomeCardImageStyle
+import com.sukisu.ultra.ui.util.HomeLayout
+import com.sukisu.ultra.ui.util.HomeStatusAlignment
+import com.sukisu.ultra.ui.util.HomeStatusStyle
 import com.sukisu.ultra.ui.util.ImageStorage
 import com.sukisu.ultra.ui.util.ThemePackageStorage
 import com.sukisu.ultra.ui.util.rememberBlurBackdrop
@@ -169,6 +178,7 @@ fun ColorPaletteScreenMiuix(
             ?: sectionRequesters[when (anchor) {
                 "color_mode", "theme_mode", "palette" -> "colors"
                 "sticker" -> "home_card"
+                "chrome", "navigation" -> "bottom_bar"
                 "gestures", "predictive_back", "scale" -> "behavior"
                 else -> anchor
             }]
@@ -192,6 +202,9 @@ fun ColorPaletteScreenMiuix(
     var cardAlphaDraft by remember { mutableFloatStateOf(state.cardBackgroundAlphaPercent.toFloat()) }
     var blurDraft by remember { mutableFloatStateOf(state.customBackgroundBlurPercent.toFloat()) }
     var scrimDraft by remember { mutableFloatStateOf(state.customBackgroundScrimPercent.toFloat()) }
+    var homeStatusScaleDraft by remember { mutableFloatStateOf(state.homeStatusScale) }
+    var homePillScaleDraft by remember { mutableFloatStateOf(state.homePillScale) }
+    var homeStatusWidthDraft by remember { mutableFloatStateOf(state.homeStatusWidthFraction) }
     val sliderCommitted = remember { mutableIntStateOf(0) }
     // Values changed outside the sliders (import, reset, AI bridge) replace the drafts. Reads the
     // counter so finishing a drag does not re-run this and yank the thumbs.
@@ -199,6 +212,9 @@ fun ColorPaletteScreenMiuix(
         state.cardBackgroundAlphaPercent,
         state.customBackgroundBlurPercent,
         state.customBackgroundScrimPercent,
+        state.homeStatusScale,
+        state.homePillScale,
+        state.homeStatusWidthFraction,
         sliderCommitted.intValue,
     ) {
         if (cardAlphaDraft.roundToInt() != state.cardBackgroundAlphaPercent) {
@@ -209,6 +225,15 @@ fun ColorPaletteScreenMiuix(
         }
         if (scrimDraft.roundToInt() != state.customBackgroundScrimPercent) {
             scrimDraft = state.customBackgroundScrimPercent.toFloat()
+        }
+        if (homeStatusScaleDraft != state.homeStatusScale) {
+            homeStatusScaleDraft = state.homeStatusScale
+        }
+        if (homePillScaleDraft != state.homePillScale) {
+            homePillScaleDraft = state.homePillScale
+        }
+        if (homeStatusWidthDraft != state.homeStatusWidthFraction) {
+            homeStatusWidthDraft = state.homeStatusWidthFraction
         }
     }
     // Same trap as the drafts: a remembered value computed once would freeze the preview at the
@@ -234,6 +259,14 @@ fun ColorPaletteScreenMiuix(
         state.hideHomeCardStatusText,
         state.hideHomeCardDecoration,
         state.homeCardStickers,
+        state.homeLayout,
+        state.homeStatusAlignment,
+        homeStatusScaleDraft,
+        homePillScaleDraft,
+        homeStatusWidthDraft,
+        state.homeCardImageStyle,
+        state.showHomeCardImageWithoutBackground,
+        state.appearance,
     ) {
         ThemePreviewSpec(
             keyColor = state.keyColor,
@@ -255,6 +288,14 @@ fun ColorPaletteScreenMiuix(
             hideHomeCardText = state.hideHomeCardStatusText,
             hideHomeCardDecoration = state.hideHomeCardDecoration,
             homeCardStickers = state.homeCardStickers,
+            homeLayout = state.homeLayout,
+            homeStatusAlignment = state.homeStatusAlignment,
+            homeStatusScale = homeStatusScaleDraft,
+            homePillScale = homePillScaleDraft,
+            homeStatusWidthFraction = homeStatusWidthDraft,
+            homeCardImageStyle = state.homeCardImageStyle,
+            showHomeCardImageWithoutBackground = state.showHomeCardImageWithoutBackground,
+            appearance = state.appearance,
         )
     }
     var showExportDialog by rememberSaveable { mutableStateOf(false) }
@@ -285,6 +326,16 @@ fun ColorPaletteScreenMiuix(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let { actions.onPickHomeCardSticker(context, it) }
+    }
+    var pendingBottomBarIconSlot by rememberSaveable { mutableStateOf<String?>(null) }
+    val bottomBarIconLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        val slot = pendingBottomBarIconSlot?.let(BottomBarIconSlot::fromKey)
+        if (uri != null && slot != null) {
+            actions.onPickBottomBarIcon(context, slot, uri)
+        }
+        pendingBottomBarIconSlot = null
     }
 
     AppScaffold(
@@ -374,606 +425,7 @@ fun ColorPaletteScreenMiuix(
 
                     AppCard(
                         modifier = Modifier
-                            .bringIntoViewRequester(sectionRequester("background"))
-                            .padding(bottom = 12.dp)
-                            .fillMaxWidth(),
-                        colors = backgroundAwareCardColors(),
-                    ) {
-                        MiuixSectionHeader(
-                            title = stringResource(R.string.settings_section_background),
-                            summary = stringResource(R.string.settings_section_background_summary),
-                            icon = Icons.Rounded.Wallpaper,
-                            expanded = backgroundSectionExpanded,
-                            onClick = {
-                                actions.onSetBackgroundSectionExpanded(!backgroundSectionExpanded)
-                            },
-                        )
-                        AnimatedVisibility(
-                            visible = backgroundSectionExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
-                            Column {
-                                HorizontalDivider()
-                                SwitchPreference(
-                                    title = stringResource(id = R.string.settings_use_system_wallpaper),
-                                    summary = stringResource(
-                                        id = if (state.isSystemWallpaperBusy) {
-                                            R.string.settings_use_system_wallpaper_reading
-                                        } else {
-                                            R.string.settings_use_system_wallpaper_summary
-                                        }
-                                    ),
-                                    startAction = {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Wallpaper,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_use_system_wallpaper),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    checked = usingSystemWallpaper,
-                                    enabled = !state.isSystemWallpaperBusy,
-                                    onCheckedChange = { actions.onSetUseSystemWallpaper(context, it) },
-                                )
-
-                                if (!usingSystemWallpaper) {
-                                    HorizontalDivider()
-                                    BasicComponent(
-                                        title = stringResource(id = R.string.settings_custom_background),
-                                        summary = stringResource(id = R.string.settings_custom_background_summary),
-                                        startAction = {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Image,
-                                                modifier = Modifier.padding(end = 6.dp),
-                                                contentDescription = stringResource(id = R.string.settings_custom_background),
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        endActions = {
-                                            if (hasCustomBg) {
-                                                MiuixTextButtonAffectedByBackground(
-                                                    text = stringResource(id = R.string.settings_clear),
-                                                    onClick = { actions.onClearCustomBackground(context) }
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            pickImageLauncher.launch(
-                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                            )
-                                        }
-                                    )
-
-                                    if (hasCustomBg) {
-                                        HorizontalDivider()
-                                        BasicComponent(
-                                            title = stringResource(id = R.string.settings_crop_background),
-                                            summary = stringResource(id = R.string.settings_crop_background_summary),
-                                            startAction = {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Crop,
-                                                    modifier = Modifier.padding(end = 6.dp),
-                                                    contentDescription = stringResource(id = R.string.settings_crop_background),
-                                                    tint = colorScheme.onBackground
-                                                )
-                                            },
-                                            onClick = { actions.onCropCurrentBackground(context) }
-                                        )
-                                    }
-                                }
-
-                                val hasCustomBgFile = hasCustomBg && !usingSystemWallpaper
-                                val hasCardBgFile = state.homeCardImagePath.isNotBlank() && File(state.homeCardImagePath).isFile
-                                val hasStickerFile = state.homeCardStickers.any { File(it.path).isFile }
-                                if (hasCustomBgFile || hasCardBgFile || hasStickerFile) {
-                                    HorizontalDivider()
-                                    ArrowPreference(
-                                        title = stringResource(id = R.string.settings_export_images),
-                                        summary = stringResource(id = R.string.settings_export_images_summary),
-                                        startAction = {
-                                            Icon(
-                                                imageVector = Icons.Rounded.FileDownload,
-                                                modifier = Modifier.padding(end = 6.dp),
-                                                contentDescription = stringResource(id = R.string.settings_export_images),
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        onClick = {
-                                            val fileName = ImageStorage.exportImagesFileName(
-                                                hasBackground = hasCustomBgFile,
-                                                hasCardBackground = hasCardBgFile,
-                                                stickerCount = state.homeCardStickers.count { File(it.path).isFile },
-                                            )
-                                            exportImagesLauncher.launch(fileName)
-                                        }
-                                    )
-                                }
-
-                                if (usingSystemWallpaper || hasCustomBg) {
-                                    HorizontalDivider()
-                                    SwitchPreference(
-                                        title = stringResource(id = R.string.settings_extract_background_color),
-                                        // Without Monet the Miuix theme ignores the seed entirely, so the
-                                        // switch would look enabled while changing nothing.
-                                        summary = stringResource(
-                                            id = if (state.miuixMonet) {
-                                                R.string.settings_extract_background_color_summary
-                                            } else {
-                                                R.string.settings_extract_background_color_disabled
-                                            }
-                                        ),
-                                        startAction = {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Colorize,
-                                                modifier = Modifier.padding(end = 6.dp),
-                                                contentDescription = stringResource(id = R.string.settings_extract_background_color),
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        checked = state.extractColorFromBackground,
-                                        onCheckedChange = actions.onSetExtractColorFromBackground,
-                                    )
-                                    HorizontalDivider()
-                                    BasicComponent(
-                                        title = stringResource(id = R.string.settings_background_appearance),
-                                        summary = stringResource(id = R.string.settings_background_appearance_summary),
-                                        startAction = {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Tune,
-                                                modifier = Modifier.padding(end = 6.dp),
-                                                contentDescription = stringResource(id = R.string.settings_background_appearance),
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        endActions = {
-                                            Icon(
-                                                imageVector = Icons.Rounded.KeyboardArrowDown,
-                                                contentDescription = null,
-                                                modifier = Modifier.graphicsLayer {
-                                                    rotationZ = if (appearanceExpanded) 180f else 0f
-                                                },
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        onClick = {
-                                            actions.onSetBackgroundAppearanceExpanded(!appearanceExpanded)
-                                        },
-                                    )
-                                    AnimatedVisibility(
-                                        visible = appearanceExpanded,
-                                        enter = expandVertically() + fadeIn(),
-                                        exit = shrinkVertically() + fadeOut(),
-                                    ) {
-                                        Column {
-                                            HorizontalDivider()
-                                            MiuixBackgroundSliderSection(
-                                                title = stringResource(id = R.string.settings_card_background_alpha),
-                                                summary = stringResource(
-                                                    id = R.string.settings_card_background_alpha_summary,
-                                                    cardAlphaDraft.roundToInt(),
-                                                ),
-                                                value = cardAlphaDraft,
-                                                valueRange = 10f..91f,
-                                                onValueChange = { cardAlphaDraft = it },
-                                                onValueChangeFinished = {
-                                                    val percent = cardAlphaDraft.roundToInt()
-                                                    cardAlphaDraft = percent.toFloat()
-                                                    sliderCommitted.intValue += 1
-                                                    actions.onSetCardBackgroundAlphaPercent(percent)
-                                                },
-                                            )
-                                            HorizontalDivider()
-                                            MiuixBackgroundSliderSection(
-                                                title = stringResource(id = R.string.settings_background_blur),
-                                                summary = stringResource(
-                                                    id = R.string.settings_background_blur_summary,
-                                                    blurDraft.roundToInt(),
-                                                ),
-                                                value = blurDraft,
-                                                valueRange = 0f..100f,
-                                                onValueChange = { blurDraft = it },
-                                                onValueChangeFinished = {
-                                                    val percent = blurDraft.roundToInt()
-                                                    blurDraft = percent.toFloat()
-                                                    sliderCommitted.intValue += 1
-                                                    actions.onSetCustomBackgroundBlurPercent(percent)
-                                                },
-                                            )
-                                            HorizontalDivider()
-                                            MiuixBackgroundSliderSection(
-                                                title = stringResource(id = R.string.settings_background_scrim),
-                                                summary = stringResource(
-                                                    id = R.string.settings_background_scrim_summary,
-                                                    scrimDraft.roundToInt(),
-                                                ),
-                                                value = scrimDraft,
-                                                valueRange = -100f..100f,
-                                                onValueChange = { scrimDraft = it },
-                                                onValueChangeFinished = {
-                                                    val percent = scrimDraft.roundToInt()
-                                                    scrimDraft = percent.toFloat()
-                                                    sliderCommitted.intValue += 1
-                                                    actions.onSetCustomBackgroundScrimPercent(percent)
-                                                },
-                                                startLabel = stringResource(id = R.string.settings_background_scrim_darker),
-                                                endLabel = stringResource(id = R.string.settings_background_scrim_lighter),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    AppCard(
-                        modifier = Modifier
-                            .bringIntoViewRequester(sectionRequester("appearance"))
-                            .fillMaxWidth(),
-                    ) {
-                        MiuixSectionHeader(
-                            title = stringResource(R.string.settings_section_appearance),
-                            summary = stringResource(R.string.settings_section_appearance_summary),
-                            icon = Icons.Rounded.Home,
-                            expanded = appearanceSectionExpanded,
-                            onClick = {
-                                actions.onSetAppearanceSectionExpanded(!appearanceSectionExpanded)
-                            },
-                        )
-                        AnimatedVisibility(
-                            visible = appearanceSectionExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
-                            Column {
-                                HorizontalDivider()
-                                SwitchPreference(
-                                    title = stringResource(id = R.string.settings_show_fullstatus),
-                                    summary = stringResource(id = R.string.settings_show_fullstatus_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Fingerprint,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_show_fullstatus),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    checked = state.showFullStatus,
-                                    onCheckedChange = {
-                                        actions.onSetShowFullStatus(it)
-                                    }
-                                )
-
-                                SwitchPreference(
-                                    title = stringResource(id = R.string.settings_hide_home_warnings),
-                                    summary = stringResource(id = R.string.settings_hide_home_warnings_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Warning,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_hide_home_warnings),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    checked = state.hideHomeWarnings,
-                                    onCheckedChange = {
-                                        actions.onSetHideHomeWarnings(it)
-                                    }
-                                )
-
-                                if (AiFeatureBridge.isAvailable) {
-                                    SwitchPreference(
-                                        title = stringResource(id = AiR.string.ai_show_home_card),
-                                        summary = stringResource(id = AiR.string.ai_show_home_card_summary),
-                                        startAction = {
-                                            Icon(
-                                                Icons.Rounded.AutoAwesome,
-                                                modifier = Modifier.padding(end = 6.dp),
-                                                contentDescription = stringResource(id = AiR.string.ai_show_home_card),
-                                                tint = colorScheme.onBackground
-                                            )
-                                        },
-                                        checked = state.showAiHomeCard,
-                                        onCheckedChange = {
-                                            actions.onSetShowAiHomeCard(it)
-                                        }
-                                    )
-                                }
-
-                                ArrowPreference(
-                                    title = customText(CustomTextKey.PAGE_APP_ICON),
-                                    summary = stringResource(
-                                        id = BuiltinAppIcons.find(uiState.appIconId).nameRes
-                                    ),
-                                    startAction = {
-                                        BuiltinAppIconPreview(
-                                            icon = BuiltinAppIcons.find(uiState.appIconId),
-                                            modifier = Modifier
-                                                .padding(end = 8.dp)
-                                                .size(28.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
-                                        )
-                                    },
-                                    onClick = actions.onOpenAppIcon,
-                                )
-                                val customTextsTitle = customText(CustomTextKey.PAGE_CUSTOM_TEXTS)
-                                ArrowPreference(
-                                    title = customTextsTitle,
-                                    summary = stringResource(id = R.string.settings_custom_texts_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Edit,
-                                            modifier = Modifier.padding(end = 8.dp),
-                                            contentDescription = customTextsTitle,
-                                            tint = colorScheme.onBackground,
-                                        )
-                                    },
-                                    onClick = actions.onOpenCustomTexts,
-                                )
-                            }
-                        }
-                    }
-                    AppCard(
-                        modifier = Modifier
-                            .bringIntoViewRequester(sectionRequester("home_card"))
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        MiuixSectionHeader(
-                            title = stringResource(R.string.settings_section_home_card),
-                            summary = stringResource(R.string.settings_section_home_card_summary),
-                            icon = Icons.Rounded.Home,
-                            expanded = homeCardSectionExpanded,
-                            onClick = {
-                                actions.onSetHomeCardSectionExpanded(!homeCardSectionExpanded)
-                            },
-                        )
-                        AnimatedVisibility(
-                            visible = homeCardSectionExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
-                            Column {
-                                HorizontalDivider()
-                                ArrowPreference(
-                                    title = stringResource(id = R.string.settings_home_card_image),
-                                    summary = if (state.homeCardImagePath.isBlank()) {
-                                        stringResource(R.string.settings_home_card_image_default)
-                                    } else {
-                                        stringResource(R.string.settings_home_card_image_set)
-                                    },
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Image,
-                                            modifier = Modifier.padding(end = 8.dp),
-                                            contentDescription = stringResource(R.string.settings_home_card_image),
-                                            tint = colorScheme.onBackground,
-                                        )
-                                    },
-                                    onClick = {
-                                        homeCardImageLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    },
-                                )
-                                BasicComponent(
-                                    title = stringResource(R.string.settings_home_card_sticker),
-                                    summary = (if (state.homeCardStickers.isEmpty()) {
-                                        stringResource(R.string.settings_home_card_sticker_not_set)
-                                    } else {
-                                        stringResource(
-                                            R.string.settings_home_card_sticker_count,
-                                            state.homeCardStickers.size,
-                                        )
-                                    }) + " · " + stringResource(R.string.settings_home_card_sticker_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Star,
-                                            modifier = Modifier.padding(end = 8.dp),
-                                            contentDescription = stringResource(R.string.settings_home_card_sticker),
-                                            tint = colorScheme.onBackground,
-                                        )
-                                    },
-                                    endActions = {
-                                        Icon(
-                                            Icons.Rounded.KeyboardArrowDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.graphicsLayer {
-                                                rotationZ = if (stickerEditorExpanded) 180f else 0f
-                                            },
-                                            tint = colorScheme.onBackground,
-                                        )
-                                    },
-                                    onClick = { stickerEditorExpanded = !stickerEditorExpanded },
-                                )
-                                AnimatedVisibility(
-                                    visible = stickerEditorExpanded,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut(),
-                                ) {
-                                    Column {
-                                        HorizontalDivider()
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        ) {
-                                            HomeCardStickerStage(
-                                                backgroundImagePath = state.homeCardImagePath,
-                                                stickers = stickerDraft,
-                                                selectedIndex = selectedSticker,
-                                                onSelect = { selectedSticker = it },
-                                                onTransformChange = { index, transform ->
-                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
-                                                        if (i == index) sticker.copy(transform = transform) else sticker
-                                                    }
-                                                },
-                                                onTransformCommit = { index, transform ->
-                                                    actions.onUpdateHomeCardStickerTransform(index, transform)
-                                                },
-                                                containerColor = colorScheme.secondaryContainer,
-                                                contentColor = colorScheme.onSecondaryContainer,
-                                                accentColor = colorScheme.primary,
-                                                accentContentColor = colorScheme.onPrimary,
-                                            )
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                stickerDraft.forEachIndexed { index, sticker ->
-                                                    HomeCardStickerThumbnail(
-                                                        path = sticker.path,
-                                                        selected = index == selectedSticker,
-                                                        accentColor = colorScheme.primary,
-                                                        onClick = { selectedSticker = index },
-                                                    )
-                                                }
-                                            }
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                if (stickerDraft.size < HomeCardSticker.MAX_COUNT) {
-                                                    TextButton(
-                                                        text = stringResource(R.string.settings_home_card_sticker_add),
-                                                        onClick = {
-                                                            homeCardStickerLauncher.launch(
-                                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                                            )
-                                                        },
-                                                        minWidth = 0.dp,
-                                                        minHeight = 0.dp,
-                                                        cornerRadius = 100.dp,
-                                                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                                                    )
-                                                } else {
-                                                    Text(
-                                                        text = stringResource(R.string.settings_home_card_sticker_limit),
-                                                        fontSize = 12.sp,
-                                                        color = colorScheme.onSurfaceVariantSummary,
-                                                    )
-                                                }
-                                                if (stickerDraft.isNotEmpty()) {
-                                                    TextButton(
-                                                        text = stringResource(R.string.settings_home_card_sticker_remove),
-                                                        onClick = {
-                                                            actions.onRemoveHomeCardSticker(
-                                                                selectedSticker.coerceIn(0, stickerDraft.lastIndex)
-                                                            )
-                                                        },
-                                                        minWidth = 0.dp,
-                                                        minHeight = 0.dp,
-                                                        cornerRadius = 100.dp,
-                                                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        if (stickerDraft.isNotEmpty()) {
-                                            val editIndex = selectedSticker.coerceIn(0, stickerDraft.lastIndex)
-                                            val editTransform = stickerDraft[editIndex].transform
-                                            MiuixBackgroundSliderSection(
-                                                title = stringResource(R.string.settings_home_card_sticker_rotation),
-                                                summary = "${editTransform.rotation.roundToInt()}°",
-                                                value = editTransform.rotation,
-                                                valueRange = HomeCardStickerTransform.ROTATION_MIN..HomeCardStickerTransform.ROTATION_MAX,
-                                                onValueChange = { value ->
-                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
-                                                        if (i == editIndex) {
-                                                            sticker.copy(transform = sticker.transform.copy(rotation = value))
-                                                        } else {
-                                                            sticker
-                                                        }
-                                                    }
-                                                },
-                                                onValueChangeFinished = {
-                                                    val latest = stickerDraft.getOrNull(editIndex)?.transform
-                                                        ?: editTransform
-                                                    val snapped = latest.copy(
-                                                        rotation = latest.rotation.roundToInt().toFloat()
-                                                    )
-                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
-                                                        if (i == editIndex) sticker.copy(transform = snapped) else sticker
-                                                    }
-                                                    actions.onUpdateHomeCardStickerTransform(editIndex, snapped)
-                                                },
-                                            )
-                                            HorizontalDivider()
-                                            MiuixBackgroundSliderSection(
-                                                title = stringResource(R.string.settings_home_card_sticker_size),
-                                                summary = "${(editTransform.size * 100).roundToInt()}%",
-                                                value = editTransform.size,
-                                                valueRange = HomeCardStickerTransform.SIZE_MIN..HomeCardStickerTransform.SIZE_MAX,
-                                                onValueChange = { value ->
-                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
-                                                        if (i == editIndex) {
-                                                            sticker.copy(transform = sticker.transform.copy(size = value))
-                                                        } else {
-                                                            sticker
-                                                        }
-                                                    }
-                                                },
-                                                onValueChangeFinished = {
-                                                    val latest = stickerDraft.getOrNull(editIndex)?.transform
-                                                        ?: editTransform
-                                                    actions.onUpdateHomeCardStickerTransform(editIndex, latest)
-                                                },
-                                            )
-                                        }
-                                    }
-                                }
-                                if (state.homeCardImagePath.isNotBlank()) {
-                                    SwitchPreference(
-                                        title = stringResource(id = R.string.settings_hide_home_card_decoration),
-                                        summary = stringResource(R.string.settings_hide_home_card_decoration_summary),
-                                        startAction = {
-                                            Icon(
-                                                Icons.Rounded.Star,
-                                                modifier = Modifier.padding(end = 8.dp),
-                                                contentDescription = stringResource(R.string.settings_hide_home_card_decoration),
-                                                tint = colorScheme.onBackground,
-                                            )
-                                        },
-                                        checked = state.hideHomeCardDecoration,
-                                        onCheckedChange = actions.onSetHideHomeCardDecoration,
-                                    )
-                                    SwitchPreference(
-                                        title = stringResource(id = R.string.settings_hide_home_card_status_text),
-                                        summary = stringResource(R.string.settings_hide_home_card_status_text_summary),
-                                        startAction = {
-                                            Icon(
-                                                Icons.Rounded.Home,
-                                                modifier = Modifier.padding(end = 8.dp),
-                                                contentDescription = stringResource(R.string.settings_hide_home_card_status_text),
-                                                tint = colorScheme.onBackground,
-                                            )
-                                        },
-                                        checked = state.hideHomeCardStatusText,
-                                        onCheckedChange = actions.onSetHideHomeCardStatusText,
-                                    )
-                                    ArrowPreference(
-                                        title = stringResource(id = R.string.settings_home_card_image_clear),
-                                        summary = stringResource(R.string.settings_home_card_image_clear_summary),
-                                        startAction = {
-                                            Icon(
-                                                Icons.Rounded.Restore,
-                                                modifier = Modifier.padding(end = 8.dp),
-                                                contentDescription = stringResource(R.string.settings_home_card_image_clear),
-                                                tint = colorScheme.onBackground,
-                                            )
-                                        },
-                                        onClick = actions.onClearHomeCardImage,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    AppCard(
-                        modifier = Modifier
                             .bringIntoViewRequester(sectionRequester("colors"))
-                            .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
                         MiuixSectionHeader(
@@ -1117,109 +569,852 @@ fun ColorPaletteScreenMiuix(
                                         }
                                     }
                                 }
+                                HorizontalDivider()
+                                ArrowPreference(
+                                    title = stringResource(R.string.appearance_overlay_title),
+                                    summary = stringResource(
+                                        if (state.customAppearanceJson.isNotBlank()) {
+                                            R.string.appearance_overlay_active
+                                        } else {
+                                            R.string.appearance_overlay_summary
+                                        }
+                                    ),
+                                    startAction = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Palette,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(R.string.appearance_overlay_title),
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
+                                    onClick = actions.onOpenAppearanceEditor,
+                                )
                             }
                         }
                     }
 
                     AppCard(
                         modifier = Modifier
-                            .bringIntoViewRequester(sectionRequester("theme_package"))
+                            .bringIntoViewRequester(sectionRequester("background"))
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = backgroundAwareCardColors(),
                     ) {
                         MiuixSectionHeader(
-                            title = stringResource(R.string.settings_section_theme_package),
-                            summary = stringResource(R.string.settings_section_theme_package_summary),
-                            icon = Icons.Rounded.Palette,
-                            expanded = themePackageSectionExpanded,
+                            title = stringResource(R.string.settings_section_background),
+                            summary = stringResource(R.string.settings_section_background_summary),
+                            icon = Icons.Rounded.Wallpaper,
+                            expanded = backgroundSectionExpanded,
                             onClick = {
-                                actions.onSetThemePackageSectionExpanded(!themePackageSectionExpanded)
+                                actions.onSetBackgroundSectionExpanded(!backgroundSectionExpanded)
                             },
                         )
                         AnimatedVisibility(
-                            visible = themePackageSectionExpanded,
+                            visible = backgroundSectionExpanded,
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
                             Column {
                                 HorizontalDivider()
-                                BasicComponent(
-                                    title = customText(CustomTextKey.PAGE_THEME_STORE),
-                                    summary = stringResource(id = R.string.theme_store_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Palette,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = customText(CustomTextKey.PAGE_THEME_STORE),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    onClick = actions.onOpenThemeStore,
-                                )
-                                BasicComponent(
-                                    title = stringResource(id = R.string.theme_reset),
-                                    summary = stringResource(id = R.string.theme_reset_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Restore,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.theme_reset),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    onClick = { showResetThemeDialog.value = true },
-                                )
-                                BasicComponent(
-                                    title = stringResource(id = R.string.theme_clear_all),
-                                    summary = stringResource(id = R.string.theme_clear_all_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Delete,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.theme_clear_all),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    onClick = { showClearAllDialog.value = true },
-                                )
-                                BasicComponent(
-                                    title = stringResource(id = R.string.theme_import),
-                                    summary = stringResource(id = R.string.theme_import_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.FileDownload,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.theme_import),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    onClick = {
-                                        importThemeLauncher.launch(
-                                                arrayOf(
-                                                    ThemePackageStorage.THEME_MIME_TYPE,
-                                                    "application/octet-stream",
-                                                    "application/zip",
-                                                    "application/x-zip-compressed",
-                                                    "*/*"
-                                                )
+                                // A bar treatment, not a wallpaper property: keep it available with
+                                // and without a custom background image.
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    SwitchPreference(
+                                        title = stringResource(id = R.string.settings_progressive_blur),
+                                        summary = stringResource(id = R.string.settings_progressive_blur_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.BlurOn,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = R.string.settings_progressive_blur),
+                                                tint = colorScheme.onBackground
                                             )
-                                    },
-                                )
-                                BasicComponent(
-                                    title = stringResource(id = R.string.theme_export),
-                                    summary = stringResource(id = R.string.theme_export_summary),
+                                        },
+                                        checked = state.enableProgressiveBlur,
+                                        onCheckedChange = actions.onSetEnableProgressiveBlur,
+                                    )
+                                    HorizontalDivider()
+                                }
+                                SwitchPreference(
+                                    title = stringResource(id = R.string.settings_use_system_wallpaper),
+                                    summary = stringResource(
+                                        id = if (state.isSystemWallpaperBusy) {
+                                            R.string.settings_use_system_wallpaper_reading
+                                        } else {
+                                            R.string.settings_use_system_wallpaper_summary
+                                        }
+                                    ),
                                     startAction = {
                                         Icon(
-                                            Icons.Rounded.FileUpload,
+                                            imageVector = Icons.Rounded.Wallpaper,
                                             modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.theme_export),
+                                            contentDescription = stringResource(id = R.string.settings_use_system_wallpaper),
                                             tint = colorScheme.onBackground
                                         )
                                     },
+                                    checked = usingSystemWallpaper,
+                                    enabled = !state.isSystemWallpaperBusy,
+                                    onCheckedChange = { actions.onSetUseSystemWallpaper(context, it) },
+                                )
+
+                                if (!usingSystemWallpaper) {
+                                    HorizontalDivider()
+                                    BasicComponent(
+                                        title = stringResource(id = R.string.settings_custom_background),
+                                        summary = stringResource(id = R.string.settings_custom_background_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Image,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = R.string.settings_custom_background),
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        endActions = {
+                                            if (hasCustomBg) {
+                                                MiuixTextButtonAffectedByBackground(
+                                                    text = stringResource(id = R.string.settings_clear),
+                                                    onClick = { actions.onClearCustomBackground(context) }
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            pickImageLauncher.launch(
+                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            )
+                                        }
+                                    )
+
+                                    if (hasCustomBg) {
+                                        HorizontalDivider()
+                                        BasicComponent(
+                                            title = stringResource(id = R.string.settings_crop_background),
+                                            summary = stringResource(id = R.string.settings_crop_background_summary),
+                                            startAction = {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Crop,
+                                                    modifier = Modifier.padding(end = 6.dp),
+                                                    contentDescription = stringResource(id = R.string.settings_crop_background),
+                                                    tint = colorScheme.onBackground
+                                                )
+                                            },
+                                            onClick = { actions.onCropCurrentBackground(context) }
+                                        )
+                                    }
+                                }
+                                if (usingSystemWallpaper || hasCustomBg) {
+                                    HorizontalDivider()
+                                    SwitchPreference(
+                                        title = stringResource(id = R.string.settings_extract_background_color),
+                                        // Without Monet the Miuix theme ignores the seed entirely, so the
+                                        // switch would look enabled while changing nothing.
+                                        summary = stringResource(
+                                            id = if (state.miuixMonet) {
+                                                R.string.settings_extract_background_color_summary
+                                            } else {
+                                                R.string.settings_extract_background_color_disabled
+                                            }
+                                        ),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Colorize,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = R.string.settings_extract_background_color),
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        checked = state.extractColorFromBackground,
+                                        onCheckedChange = actions.onSetExtractColorFromBackground,
+                                    )
+                                }
+
+
+                                val hasCustomBgFile = hasCustomBg && !usingSystemWallpaper
+                                val hasCardBgFile = state.homeCardImagePath.isNotBlank() && File(state.homeCardImagePath).isFile
+                                val hasStickerFile = state.homeCardStickers.any { File(it.path).isFile }
+                                if (hasCustomBgFile || hasCardBgFile || hasStickerFile) {
+                                    HorizontalDivider()
+                                    ArrowPreference(
+                                        title = stringResource(id = R.string.settings_export_images),
+                                        summary = stringResource(id = R.string.settings_export_images_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.FileDownload,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = R.string.settings_export_images),
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        onClick = {
+                                            val fileName = ImageStorage.exportImagesFileName(
+                                                hasBackground = hasCustomBgFile,
+                                                hasCardBackground = hasCardBgFile,
+                                                stickerCount = state.homeCardStickers.count { File(it.path).isFile },
+                                            )
+                                            exportImagesLauncher.launch(fileName)
+                                        }
+                                    )
+                                }
+
+                                if (usingSystemWallpaper || hasCustomBg) {
+                                    HorizontalDivider()
+                                    BasicComponent(
+                                        title = stringResource(id = R.string.settings_background_appearance),
+                                        summary = stringResource(id = R.string.settings_background_appearance_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Tune,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = R.string.settings_background_appearance),
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        endActions = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.KeyboardArrowDown,
+                                                contentDescription = null,
+                                                modifier = Modifier.graphicsLayer {
+                                                    rotationZ = if (appearanceExpanded) 180f else 0f
+                                                },
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        onClick = {
+                                            actions.onSetBackgroundAppearanceExpanded(!appearanceExpanded)
+                                        },
+                                    )
+                                    AnimatedVisibility(
+                                        visible = appearanceExpanded,
+                                        enter = expandVertically() + fadeIn(),
+                                        exit = shrinkVertically() + fadeOut(),
+                                    ) {
+                                        Column {
+                                            HorizontalDivider()
+                                            MiuixBackgroundSliderSection(
+                                                title = stringResource(id = R.string.settings_card_background_alpha),
+                                                summary = stringResource(
+                                                    id = R.string.settings_card_background_alpha_summary,
+                                                    cardAlphaDraft.roundToInt(),
+                                                ),
+                                                value = cardAlphaDraft,
+                                                valueRange = 10f..91f,
+                                                onValueChange = { cardAlphaDraft = it },
+                                                onValueChangeFinished = {
+                                                    val percent = cardAlphaDraft.roundToInt()
+                                                    cardAlphaDraft = percent.toFloat()
+                                                    sliderCommitted.intValue += 1
+                                                    actions.onSetCardBackgroundAlphaPercent(percent)
+                                                },
+                                            )
+                                            HorizontalDivider()
+                                            MiuixBackgroundSliderSection(
+                                                title = stringResource(id = R.string.settings_background_blur),
+                                                summary = stringResource(
+                                                    id = R.string.settings_background_blur_summary,
+                                                    blurDraft.roundToInt(),
+                                                ),
+                                                value = blurDraft,
+                                                valueRange = 0f..100f,
+                                                onValueChange = { blurDraft = it },
+                                                onValueChangeFinished = {
+                                                    val percent = blurDraft.roundToInt()
+                                                    blurDraft = percent.toFloat()
+                                                    sliderCommitted.intValue += 1
+                                                    actions.onSetCustomBackgroundBlurPercent(percent)
+                                                },
+                                            )
+                                            HorizontalDivider()
+                                            MiuixBackgroundSliderSection(
+                                                title = stringResource(id = R.string.settings_background_scrim),
+                                                summary = stringResource(
+                                                    id = R.string.settings_background_scrim_summary,
+                                                    scrimDraft.roundToInt(),
+                                                ),
+                                                value = scrimDraft,
+                                                valueRange = -100f..100f,
+                                                onValueChange = { scrimDraft = it },
+                                                onValueChangeFinished = {
+                                                    val percent = scrimDraft.roundToInt()
+                                                    scrimDraft = percent.toFloat()
+                                                    sliderCommitted.intValue += 1
+                                                    actions.onSetCustomBackgroundScrimPercent(percent)
+                                                },
+                                                startLabel = stringResource(id = R.string.settings_background_scrim_darker),
+                                                endLabel = stringResource(id = R.string.settings_background_scrim_lighter),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    AppCard(
+                        modifier = Modifier
+                            .bringIntoViewRequester(sectionRequester("appearance"))
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_icon_text),
+                            summary = stringResource(R.string.settings_section_icon_text_summary),
+                            icon = Icons.Rounded.Home,
+                            expanded = appearanceSectionExpanded,
+                            onClick = {
+                                actions.onSetAppearanceSectionExpanded(!appearanceSectionExpanded)
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = appearanceSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
+                                ArrowPreference(
+                                    title = customText(CustomTextKey.PAGE_APP_ICON),
+                                    summary = stringResource(
+                                        id = BuiltinAppIcons.find(uiState.appIconId).nameRes
+                                    ),
+                                    startAction = {
+                                        BuiltinAppIconPreview(
+                                            icon = BuiltinAppIcons.find(uiState.appIconId),
+                                            modifier = Modifier
+                                                .padding(end = 8.dp)
+                                                .size(28.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                        )
+                                    },
+                                    onClick = actions.onOpenAppIcon,
+                                )
+                                val customTextsTitle = customText(CustomTextKey.PAGE_CUSTOM_TEXTS)
+                                ArrowPreference(
+                                    title = customTextsTitle,
+                                    summary = stringResource(id = R.string.settings_custom_texts_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Edit,
+                                            modifier = Modifier.padding(end = 8.dp),
+                                            contentDescription = customTextsTitle,
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
+                                    onClick = actions.onOpenCustomTexts,
+                                )
+                                SwitchPreference(
+                                    title = stringResource(id = R.string.settings_show_fullstatus),
+                                    summary = stringResource(id = R.string.settings_show_fullstatus_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Fingerprint,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.settings_show_fullstatus),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    checked = state.showFullStatus,
+                                    onCheckedChange = {
+                                        actions.onSetShowFullStatus(it)
+                                    }
+                                )
+
+                                SwitchPreference(
+                                    title = stringResource(id = R.string.settings_hide_home_warnings),
+                                    summary = stringResource(id = R.string.settings_hide_home_warnings_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Warning,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.settings_hide_home_warnings),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    checked = state.hideHomeWarnings,
+                                    onCheckedChange = {
+                                        actions.onSetHideHomeWarnings(it)
+                                    }
+                                )
+
+                                if (AiFeatureBridge.isAvailable) {
+                                    SwitchPreference(
+                                        title = stringResource(id = AiR.string.ai_show_home_card),
+                                        summary = stringResource(id = AiR.string.ai_show_home_card_summary),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.AutoAwesome,
+                                                modifier = Modifier.padding(end = 6.dp),
+                                                contentDescription = stringResource(id = AiR.string.ai_show_home_card),
+                                                tint = colorScheme.onBackground
+                                            )
+                                        },
+                                        checked = state.showAiHomeCard,
+                                        onCheckedChange = {
+                                            actions.onSetShowAiHomeCard(it)
+                                        }
+                                    )
+                                }
+
+                            }
+                        }
+                    }
+                    AppCard(
+                        modifier = Modifier
+                            .bringIntoViewRequester(sectionRequester("home_card"))
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_home_card),
+                            summary = stringResource(R.string.settings_section_home_card_summary),
+                            icon = Icons.Rounded.Home,
+                            expanded = homeCardSectionExpanded,
+                            onClick = {
+                                actions.onSetHomeCardSectionExpanded(!homeCardSectionExpanded)
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = homeCardSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
+                                TabRowWithContour(
+                                    tabs = listOf(
+                                        stringResource(R.string.home_layout_classic),
+                                        stringResource(R.string.home_layout_immersive),
+                                    ),
+                                    selectedTabIndex = if (state.homeLayout == HomeLayout.IMMERSIVE) 1 else 0,
+                                    onTabSelected = { index ->
+                                        actions.onSetHomeLayout(
+                                            if (index == 1) HomeLayout.IMMERSIVE else HomeLayout.CLASSIC
+                                        )
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    colors = TabRowDefaults.tabRowColors(
+                                        backgroundColor = backgroundAwareColor(colorScheme.surfaceContainerHighest),
+                                        selectedBackgroundColor = backgroundAwareColor(colorScheme.surfaceContainer),
+                                    ),
+                                )
+                                HorizontalDivider()
+                                ArrowPreference(
+                                    title = stringResource(id = R.string.settings_home_card_image),
+                                    summary = if (state.homeCardImagePath.isBlank()) {
+                                        stringResource(R.string.settings_home_card_image_default)
+                                    } else {
+                                        stringResource(R.string.settings_home_card_image_set)
+                                    },
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Image,
+                                            modifier = Modifier.padding(end = 8.dp),
+                                            contentDescription = stringResource(R.string.settings_home_card_image),
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
                                     onClick = {
-                                        showExportDialog = true
+                                        homeCardImageLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
                                     },
                                 )
+                                if (state.homeLayout == HomeLayout.CLASSIC && state.homeCardImagePath.isNotBlank()) {
+                                    SwitchPreference(
+                                        title = stringResource(id = R.string.settings_hide_home_card_decoration),
+                                        summary = stringResource(R.string.settings_hide_home_card_decoration_summary),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.Star,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                contentDescription = stringResource(R.string.settings_hide_home_card_decoration),
+                                                tint = colorScheme.onBackground,
+                                            )
+                                        },
+                                        checked = state.hideHomeCardDecoration,
+                                        onCheckedChange = actions.onSetHideHomeCardDecoration,
+                                    )
+                                    SwitchPreference(
+                                        title = stringResource(id = R.string.settings_hide_home_card_status_text),
+                                        summary = stringResource(R.string.settings_hide_home_card_status_text_summary),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.Home,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                contentDescription = stringResource(R.string.settings_hide_home_card_status_text),
+                                                tint = colorScheme.onBackground,
+                                            )
+                                        },
+                                        checked = state.hideHomeCardStatusText,
+                                        onCheckedChange = actions.onSetHideHomeCardStatusText,
+                                    )
+                                }
+                                if (state.homeLayout == HomeLayout.IMMERSIVE) {
+                                    if (state.homeCardImagePath.isNotBlank()) {
+                                        OverlayDropdownPreference(
+                                            title = stringResource(R.string.settings_home_card_image_position),
+                                            items = listOf(
+                                                stringResource(R.string.home_card_image_position_banner),
+                                                stringResource(R.string.home_card_image_position_off),
+                                            ),
+                                            startAction = {
+                                                Icon(
+                                                    Icons.Rounded.AspectRatio,
+                                                    modifier = Modifier.padding(end = 8.dp),
+                                                    contentDescription = stringResource(R.string.settings_home_card_image_position),
+                                                    tint = colorScheme.onBackground,
+                                                )
+                                            },
+                                            selectedIndex = when (state.homeCardImageStyle) {
+                                                HomeCardImageStyle.BANNER -> 0
+                                                HomeCardImageStyle.OFF -> 1
+                                            },
+                                            onSelectedIndexChange = { index ->
+                                                actions.onSetHomeCardImageStyle(
+                                                    if (index == 0) {
+                                                        HomeCardImageStyle.BANNER
+                                                    } else {
+                                                        HomeCardImageStyle.OFF
+                                                    }
+                                                )
+                                            },
+                                        )
+                                        if (state.homeCardImageStyle == HomeCardImageStyle.BANNER) {
+                                        SwitchPreference(
+                                            title = stringResource(R.string.settings_show_home_card_image_without_background),
+                                            summary = stringResource(R.string.settings_show_home_card_image_without_background_summary),
+                                            startAction = {
+                                                Icon(
+                                                    Icons.Rounded.Wallpaper,
+                                                    modifier = Modifier.padding(end = 8.dp),
+                                                    contentDescription = stringResource(R.string.settings_show_home_card_image_without_background),
+                                                    tint = colorScheme.onBackground,
+                                                )
+                                            },
+                                            checked = state.showHomeCardImageWithoutBackground,
+                                            onCheckedChange = actions.onSetShowHomeCardImageWithoutBackground,
+                                        )
+                                        }
+                                    }
+                                    OverlayDropdownPreference(
+                                        title = stringResource(R.string.settings_home_status_alignment),
+                                        items = listOf(
+                                            stringResource(R.string.home_status_alignment_start),
+                                            stringResource(R.string.home_status_alignment_end),
+                                        ),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.AspectRatio,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                contentDescription = stringResource(R.string.settings_home_status_alignment),
+                                                tint = colorScheme.onBackground,
+                                            )
+                                        },
+                                        selectedIndex = if (
+                                            state.homeStatusAlignment == HomeStatusAlignment.END
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                        onSelectedIndexChange = { index ->
+                                            actions.onSetHomeStatusAlignment(
+                                                if (index == 1) {
+                                                    HomeStatusAlignment.END
+                                                } else {
+                                                    HomeStatusAlignment.START
+                                                }
+                                            )
+                                        },
+                                    )
+                                    MiuixBackgroundSliderSection(
+                                        title = stringResource(R.string.settings_home_pill_scale),
+                                        summary = stringResource(
+                                            R.string.settings_home_pill_scale_summary,
+                                            (homePillScaleDraft * 100).roundToInt(),
+                                        ),
+                                        value = homePillScaleDraft,
+                                        valueRange = HomeStatusStyle.PILL_SCALE_MIN..HomeStatusStyle.PILL_SCALE_MAX,
+                                        onValueChange = { homePillScaleDraft = it },
+                                        onValueChangeFinished = {
+                                            actions.onSetHomePillScale(homePillScaleDraft)
+                                        },
+                                        startLabel = "50%",
+                                        endLabel = "150%",
+                                    )
+                                    if (state.homeCardImageStyle == HomeCardImageStyle.BANNER) {
+                                    MiuixBackgroundSliderSection(
+                                        title = stringResource(R.string.settings_home_status_scale),
+                                        summary = stringResource(
+                                            R.string.settings_home_status_scale_summary,
+                                            (homeStatusScaleDraft * 100).roundToInt(),
+                                        ),
+                                        value = homeStatusScaleDraft,
+                                        valueRange = HomeStatusStyle.SCALE_MIN..HomeStatusStyle.SCALE_MAX,
+                                        onValueChange = { homeStatusScaleDraft = it },
+                                        onValueChangeFinished = {
+                                            actions.onSetHomeStatusScale(homeStatusScaleDraft)
+                                        },
+                                        startLabel = "50%",
+                                        endLabel = "300%",
+                                    )
+                                    MiuixBackgroundSliderSection(
+                                        title = stringResource(R.string.settings_home_status_width),
+                                        summary = stringResource(
+                                            R.string.settings_home_status_width_summary,
+                                            (homeStatusWidthDraft * 100).roundToInt(),
+                                        ),
+                                        value = homeStatusWidthDraft,
+                                        valueRange = HomeStatusStyle.WIDTH_MIN..HomeStatusStyle.WIDTH_MAX,
+                                        onValueChange = { homeStatusWidthDraft = it },
+                                        onValueChangeFinished = {
+                                            actions.onSetHomeStatusWidthFraction(homeStatusWidthDraft)
+                                        },
+                                        startLabel = "45%",
+                                        endLabel = "100%",
+                                    )
+                                    }
+                                }
+                                val canUseStickers = state.homeLayout == HomeLayout.CLASSIC || (
+                                    state.homeCardImageStyle == HomeCardImageStyle.BANNER &&
+                                        state.homeCardImagePath.isNotBlank() &&
+                                        (state.backgroundPath.isNotBlank() ||
+                                            state.showHomeCardImageWithoutBackground)
+                                    )
+                                val stickerBlockedByBackground =
+                                    state.homeCardImageStyle == HomeCardImageStyle.BANNER &&
+                                        state.homeCardImagePath.isNotBlank() &&
+                                        state.backgroundPath.isBlank() &&
+                                        !state.showHomeCardImageWithoutBackground
+                                if (canUseStickers) {
+                                BasicComponent(
+                                    title = stringResource(R.string.settings_home_card_sticker),
+                                    summary = (if (state.homeCardStickers.isEmpty()) {
+                                        stringResource(R.string.settings_home_card_sticker_not_set)
+                                    } else {
+                                        stringResource(
+                                            R.string.settings_home_card_sticker_count,
+                                            state.homeCardStickers.size,
+                                        )
+                                    }) + " · " + stringResource(R.string.settings_home_card_sticker_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Star,
+                                            modifier = Modifier.padding(end = 8.dp),
+                                            contentDescription = stringResource(R.string.settings_home_card_sticker),
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
+                                    endActions = {
+                                        Icon(
+                                            Icons.Rounded.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.graphicsLayer {
+                                                rotationZ = if (stickerEditorExpanded) 180f else 0f
+                                            },
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
+                                    onClick = { stickerEditorExpanded = !stickerEditorExpanded },
+                                )
+                                AnimatedVisibility(
+                                    visible = stickerEditorExpanded && canUseStickers,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut(),
+                                ) {
+                                    Column {
+                                        HorizontalDivider()
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        ) {
+                                            HomeCardStickerStage(
+                                                backgroundImagePath = state.homeCardImagePath,
+                                                stickers = stickerDraft,
+                                                selectedIndex = selectedSticker,
+                                                onSelect = { selectedSticker = it },
+                                                onTransformChange = { index, transform ->
+                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
+                                                        if (i == index) sticker.copy(transform = transform) else sticker
+                                                    }
+                                                },
+                                                onTransformCommit = { index, transform ->
+                                                    actions.onUpdateHomeCardStickerTransform(index, transform)
+                                                },
+                                                containerColor = if (state.homeLayout == HomeLayout.IMMERSIVE) {
+                                                    colorScheme.surfaceContainer
+                                                } else {
+                                                    colorScheme.secondaryContainer
+                                                },
+                                                contentColor = if (state.homeLayout == HomeLayout.IMMERSIVE) {
+                                                    colorScheme.onSurface
+                                                } else {
+                                                    colorScheme.onSecondaryContainer
+                                                },
+                                                accentColor = colorScheme.primary,
+                                                accentContentColor = colorScheme.onPrimary,
+                                                layout = state.homeLayout,
+                                                imageStyle = state.homeCardImageStyle,
+                                                statusScale = state.homeStatusScale,
+                                                statusWidthFraction = state.homeStatusWidthFraction,
+                                                pillScale = state.homePillScale,
+                                                statusAlignment = state.homeStatusAlignment,
+                                            )
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                stickerDraft.forEachIndexed { index, sticker ->
+                                                    HomeCardStickerThumbnail(
+                                                        path = sticker.path,
+                                                        selected = index == selectedSticker,
+                                                        accentColor = colorScheme.primary,
+                                                        onClick = { selectedSticker = index },
+                                                    )
+                                                }
+                                            }
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                if (stickerDraft.size < HomeCardSticker.MAX_COUNT) {
+                                                    TextButton(
+                                                        text = stringResource(R.string.settings_home_card_sticker_add),
+                                                        onClick = {
+                                                            homeCardStickerLauncher.launch(
+                                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                            )
+                                                        },
+                                                        minWidth = 0.dp,
+                                                        minHeight = 0.dp,
+                                                        cornerRadius = 100.dp,
+                                                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = stringResource(R.string.settings_home_card_sticker_limit),
+                                                        fontSize = 12.sp,
+                                                        color = colorScheme.onSurfaceVariantSummary,
+                                                    )
+                                                }
+                                                if (stickerDraft.isNotEmpty()) {
+                                                    TextButton(
+                                                        text = stringResource(R.string.settings_home_card_sticker_remove),
+                                                        onClick = {
+                                                            actions.onRemoveHomeCardSticker(
+                                                                selectedSticker.coerceIn(0, stickerDraft.lastIndex)
+                                                            )
+                                                        },
+                                                        minWidth = 0.dp,
+                                                        minHeight = 0.dp,
+                                                        cornerRadius = 100.dp,
+                                                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        if (stickerDraft.isNotEmpty()) {
+                                            val editIndex = selectedSticker.coerceIn(0, stickerDraft.lastIndex)
+                                            val editTransform = stickerDraft[editIndex].transform
+                                            val stickerSizeMax = if (state.homeLayout == HomeLayout.IMMERSIVE) {
+                                                minOf(
+                                                    HomeCardStickerTransform.SIZE_MAX,
+                                                    0.9f * HomeStatusStyle.BannerHeight.value *
+                                                        state.homeStatusScale / 360f,
+                                                )
+                                            } else {
+                                                HomeCardStickerTransform.SIZE_MAX
+                                            }
+                                            MiuixBackgroundSliderSection(
+                                                title = stringResource(R.string.settings_home_card_sticker_rotation),
+                                                summary = "${editTransform.rotation.roundToInt()}°",
+                                                value = editTransform.rotation,
+                                                valueRange = HomeCardStickerTransform.ROTATION_MIN..HomeCardStickerTransform.ROTATION_MAX,
+                                                onValueChange = { value ->
+                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
+                                                        if (i == editIndex) {
+                                                            sticker.copy(transform = sticker.transform.copy(rotation = value))
+                                                        } else {
+                                                            sticker
+                                                        }
+                                                    }
+                                                },
+                                                onValueChangeFinished = {
+                                                    val latest = stickerDraft.getOrNull(editIndex)?.transform
+                                                        ?: editTransform
+                                                    val snapped = latest.copy(
+                                                        rotation = latest.rotation.roundToInt().toFloat()
+                                                    )
+                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
+                                                        if (i == editIndex) sticker.copy(transform = snapped) else sticker
+                                                    }
+                                                    actions.onUpdateHomeCardStickerTransform(editIndex, snapped)
+                                                },
+                                            )
+                                            HorizontalDivider()
+                                            MiuixBackgroundSliderSection(
+                                                title = stringResource(R.string.settings_home_card_sticker_size),
+                                                summary = "${(editTransform.size * 100).roundToInt()}%",
+                                                value = editTransform.size.coerceIn(
+                                                    HomeCardStickerTransform.SIZE_MIN,
+                                                    stickerSizeMax,
+                                                ),
+                                                valueRange = HomeCardStickerTransform.SIZE_MIN..stickerSizeMax,
+                                                onValueChange = { value ->
+                                                    stickerDraft = stickerDraft.mapIndexed { i, sticker ->
+                                                        if (i == editIndex) {
+                                                            sticker.copy(transform = sticker.transform.copy(size = value))
+                                                        } else {
+                                                            sticker
+                                                        }
+                                                    }
+                                                },
+                                                onValueChangeFinished = {
+                                                    val latest = stickerDraft.getOrNull(editIndex)?.transform
+                                                        ?: editTransform
+                                                    actions.onUpdateHomeCardStickerTransform(editIndex, latest)
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+                                } else if (state.homeCardImageStyle == HomeCardImageStyle.BANNER) {
+                                    BasicComponent(
+                                        title = stringResource(R.string.settings_home_card_sticker),
+                                        summary = stringResource(
+                                            if (stickerBlockedByBackground) {
+                                                R.string.settings_home_card_sticker_hidden
+                                            } else {
+                                                R.string.settings_home_card_sticker_banner_only
+                                            }
+                                        ),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.Star,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                contentDescription = stringResource(R.string.settings_home_card_sticker),
+                                                tint = colorScheme.onBackground,
+                                            )
+                                        },
+                                    )
+                                }
+                                if (state.homeCardImagePath.isNotBlank()) {
+                                    ArrowPreference(
+                                        title = stringResource(id = R.string.settings_home_card_image_clear),
+                                        summary = stringResource(R.string.settings_home_card_image_clear_summary),
+                                        startAction = {
+                                            Icon(
+                                                Icons.Rounded.Restore,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                contentDescription = stringResource(R.string.settings_home_card_image_clear),
+                                                tint = colorScheme.onBackground,
+                                            )
+                                        },
+                                        onClick = actions.onClearHomeCardImage,
+                                    )
+                                }
                             }
                         }
                     }
@@ -1227,9 +1422,84 @@ fun ColorPaletteScreenMiuix(
                     AppCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .bringIntoViewRequester(sectionRequester("chrome"))
+                            .bringIntoViewRequester(sectionRequester("bottom_bar"))
                             .fillMaxWidth(),
                     ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_bottom_bar),
+                            summary = stringResource(R.string.settings_section_bottom_bar_summary),
+                            icon = Icons.Rounded.CallToAction,
+                            expanded = state.bottomBarSectionExpanded,
+                            onClick = {
+                                actions.onSetBottomBarSectionExpanded(
+                                    !state.bottomBarSectionExpanded,
+                                )
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = state.bottomBarSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
+                        val bottomBarIconPaths = uiState.bottomBarIcons
+                        val bottomBarSlots = listOf(
+                            BottomBarIconSlot.Home to R.string.settings_bottom_bar_icon_home,
+                            BottomBarIconSlot.SuperUser to R.string.settings_bottom_bar_icon_superuser,
+                            BottomBarIconSlot.Module to R.string.settings_bottom_bar_icon_module,
+                            BottomBarIconSlot.Setting to R.string.settings_bottom_bar_icon_setting,
+                        )
+                        bottomBarSlots.forEach { (slot, labelRes) ->
+                            val path = bottomBarIconPaths[slot.key]
+                            val destination = BottomBarDestination.entries
+                                .firstOrNull { it.key == slot.key }
+                            ArrowPreference(
+                                title = stringResource(labelRes),
+                                summary = stringResource(
+                                    if (path != null) {
+                                        R.string.settings_bottom_bar_icon_custom_summary
+                                    } else {
+                                        R.string.settings_bottom_bar_icon_default_summary
+                                    },
+                                ),
+                                startAction = {
+                                    if (path != null) {
+                                        AsyncImage(
+                                            model = File(path),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .padding(end = 6.dp)
+                                                .size(24.dp),
+                                        )
+                                    } else if (destination != null) {
+                                        Icon(
+                                            imageVector = destination.icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    }
+                                },
+                                endActions = {
+                                    if (path != null) {
+                                        MiuixTextButtonAffectedByBackground(
+                                            text = stringResource(R.string.settings_clear),
+                                            onClick = { actions.onClearBottomBarIcon(context, slot) },
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    pendingBottomBarIconSlot = slot.key
+                                    bottomBarIconLauncher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+                        HorizontalDivider()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_enable_blur),
@@ -1298,6 +1568,8 @@ fun ColorPaletteScreenMiuix(
                                 actions.onSetEnableNavigationBadge(it)
                             }
                         )
+                            }
+                        }
                     }
 
                     AppCard(
@@ -1306,6 +1578,24 @@ fun ColorPaletteScreenMiuix(
                             .bringIntoViewRequester(sectionRequester("behavior"))
                             .fillMaxWidth(),
                     ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_interaction),
+                            summary = stringResource(R.string.settings_section_interaction_summary),
+                            icon = Icons.Rounded.Swipe,
+                            expanded = state.interactionSectionExpanded,
+                            onClick = {
+                                actions.onSetInteractionSectionExpanded(
+                                    !state.interactionSectionExpanded,
+                                )
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = state.interactionSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_enable_predictive_back),
@@ -1403,6 +1693,8 @@ fun ColorPaletteScreenMiuix(
                                 actions.onSetPageScale(it)
                             }
                         )
+                            }
+                        }
                     }
 
                     AppCard(
@@ -1411,6 +1703,24 @@ fun ColorPaletteScreenMiuix(
                             .bringIntoViewRequester(sectionRequester("module_description"))
                             .fillMaxWidth(),
                     ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_details),
+                            summary = stringResource(R.string.settings_section_details_summary),
+                            icon = Icons.Rounded.Description,
+                            expanded = state.detailsSectionExpanded,
+                            onClick = {
+                                actions.onSetDetailsSectionExpanded(
+                                    !state.detailsSectionExpanded,
+                                )
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = state.detailsSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
                         var linesValue by remember(state.moduleDescriptionMaxLines) { mutableIntStateOf(state.moduleDescriptionMaxLines) }
                         BasicComponent(
                             title = stringResource(id = R.string.settings_module_description_max_lines),
@@ -1446,6 +1756,147 @@ fun ColorPaletteScreenMiuix(
                                 )
                             },
                         )
+                            }
+                        }
+                    }
+
+                    AppCard(
+                        modifier = Modifier
+                            .bringIntoViewRequester(sectionRequester("theme_package"))
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        MiuixSectionHeader(
+                            title = stringResource(R.string.settings_section_theme_package),
+                            summary = when {
+                                state.adaptiveDraftComplete ->
+                                    stringResource(R.string.theme_adaptive_draft_ready)
+
+                                state.adaptiveThemeActive && !state.currentColorMode.isSystem ->
+                                    stringResource(
+                                        R.string.theme_adaptive_active_forced,
+                                        stringResource(
+                                            if (state.currentColorMode.isDark) {
+                                                R.string.theme_adaptive_mode_dark
+                                            } else {
+                                                R.string.theme_adaptive_mode_light
+                                            },
+                                        ),
+                                    )
+
+                                state.adaptiveThemeActive ->
+                                    stringResource(R.string.theme_adaptive_active)
+
+                                else ->
+                                    stringResource(R.string.settings_section_theme_package_summary)
+                            },
+                            icon = Icons.Rounded.Palette,
+                            expanded = themePackageSectionExpanded,
+                            onClick = {
+                                actions.onSetThemePackageSectionExpanded(!themePackageSectionExpanded)
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = themePackageSectionExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                HorizontalDivider()
+                                BasicComponent(
+                                    title = customText(CustomTextKey.PAGE_THEME_STORE),
+                                    summary = stringResource(id = R.string.theme_store_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Storefront,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = customText(CustomTextKey.PAGE_THEME_STORE),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = actions.onOpenThemeStore,
+                                )
+                                BasicComponent(
+                                    title = stringResource(id = R.string.theme_import),
+                                    summary = stringResource(id = R.string.theme_import_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.FileDownload,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.theme_import),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = {
+                                        importThemeLauncher.launch(
+                                                arrayOf(
+                                                    ThemePackageStorage.THEME_MIME_TYPE,
+                                                    "application/octet-stream",
+                                                    "application/zip",
+                                                    "application/x-zip-compressed",
+                                                    "*/*"
+                                                )
+                                            )
+                                    },
+                                )
+                                BasicComponent(
+                                    title = stringResource(id = R.string.theme_export),
+                                    summary = stringResource(id = R.string.theme_export_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.FileUpload,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.theme_export),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = {
+                                        showExportDialog = true
+                                    },
+                                )
+                                BasicComponent(
+                                    title = stringResource(id = R.string.theme_adaptive_builder_title),
+                                    summary = stringResource(id = R.string.theme_adaptive_builder_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.AutoAwesome,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(
+                                                id = R.string.theme_adaptive_builder_title,
+                                            ),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = actions.onOpenAdaptiveThemeBuilder,
+                                )
+                                BasicComponent(
+                                    title = stringResource(id = R.string.theme_reset),
+                                    summary = stringResource(id = R.string.theme_reset_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Restore,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.theme_reset),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = { showResetThemeDialog.value = true },
+                                )
+                                BasicComponent(
+                                    title = stringResource(id = R.string.theme_clear_all),
+                                    summary = stringResource(id = R.string.theme_clear_all_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Delete,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.theme_clear_all),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    onClick = { showClearAllDialog.value = true },
+                                )
+                            }
+                        }
                     }
 
                 }
@@ -1567,6 +2018,15 @@ fun ColorPaletteScreenMiuix(
             showExportDialog = false
             pendingExportOptions = options
             exportThemeLauncher.launch(ThemePackageStorage.packageFileName())
+        },
+        adaptive = state.adaptiveThemeActive || state.adaptiveDraftComplete,
+        hasCustomColors = state.customColorsPresent,
+        hasImageEffects = state.imageEffectsPresent,
+        immersiveHome = state.homeLayout == HomeLayout.IMMERSIVE,
+        hasBottomBarIcons = uiState.bottomBarIcons.isNotEmpty(),
+        onUpload = { options ->
+            showExportDialog = false
+            actions.onUploadTheme(context, options)
         },
     )
 }

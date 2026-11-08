@@ -7,7 +7,10 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.util.BuiltinAppIcons
 import com.sukisu.ultra.ui.util.CustomTextGroup
+import com.sukisu.ultra.ui.util.HomeCardImageStyle
 import com.sukisu.ultra.ui.util.HomeCardSticker
+import com.sukisu.ultra.ui.util.HomeLayout
+import com.sukisu.ultra.ui.util.HomeStatusAlignment
 
 @Immutable
 data class SettingsUiState(
@@ -17,6 +20,7 @@ data class SettingsUiState(
     val checkCiUpdate: Boolean = false,
     val checkModuleUpdate: Boolean = true,
     val autoDeleteModuleZip: Boolean = false,
+    val autoDeleteUpdateApk: Boolean = false,
     val appIconId: String = BuiltinAppIcons.DEFAULT_ID,
     val appIconDynamicColor: Boolean = false,
     val themeMode: Int = 0,
@@ -28,6 +32,7 @@ data class SettingsUiState(
     val enableSwipeDismiss: Boolean = true,
     val pagerInterceptionMode: Int = 1,
     val enableBlur: Boolean = true,
+    val enableProgressiveBlur: Boolean = false,
     val enableFloatingBottomBar: Boolean = false,
     val enableFloatingBottomBarBlur: Boolean = false,
     val enableNavigationBadge: Boolean = true,
@@ -86,7 +91,7 @@ data class SettingsUiState(
     val customBackgroundUri: String = "",
     val customBackgroundUpdatedAt: Long = 0L,
     val useSystemWallpaper: Boolean = false,
-    /** Cached launcher wallpaper used when [useSystemWallpaper] is on and the file exists. */
+    
     val systemWallpaperPath: String = "",
     val isSystemWallpaperBusy: Boolean = false,
     val extractColorFromBackground: Boolean = false,
@@ -99,6 +104,9 @@ data class SettingsUiState(
     val appearanceSectionExpanded: Boolean = true,
     val homeCardSectionExpanded: Boolean = true,
     val colorsSectionExpanded: Boolean = true,
+    val bottomBarSectionExpanded: Boolean = true,
+    val interactionSectionExpanded: Boolean = true,
+    val detailsSectionExpanded: Boolean = true,
     val customHomeTitle: String = "",
     val customTexts: Map<String, String> = emptyMap(),
     val themeStoreBaseUrl: String = "",
@@ -111,9 +119,33 @@ data class SettingsUiState(
     val hideHomeCardStatusText: Boolean = false,
     val hideHomeCardDecoration: Boolean = false,
     val homeCardStickers: List<HomeCardSticker> = emptyList(),
+    /** Custom bottom bar icon images keyed by [com.sukisu.ultra.ui.util.BottomBarIconSlot.key]. */
+    val bottomBarIcons: Map<String, String> = emptyMap(),
+    val homeLayout: HomeLayout = HomeLayout.CLASSIC,
+    val homeStatusAlignment: HomeStatusAlignment = HomeStatusAlignment.START,
+    val homeStatusScale: Float = 1f,
+    val homePillScale: Float = 1f,
+    val homeStatusWidthFraction: Float = 1f,
+    val homeCardImageStyle: HomeCardImageStyle = HomeCardImageStyle.BANNER,
+    val showHomeCardImageWithoutBackground: Boolean = false,
 
     val pendingImportTheme: com.sukisu.ultra.ui.util.ImportedTheme? = null,
     val showThemeImportDialog: Boolean = false,
+    
+    val adaptiveThemeActive: Boolean = false,
+    
+    val adaptiveDraftLightCaptured: Boolean = false,
+    val adaptiveDraftDarkCaptured: Boolean = false,
+    val adaptiveDraftComplete: Boolean = false,
+    
+    val adaptiveDraftRevision: Int = 0,
+
+    /** Canonical JSON of the static colour / image-effect overlay, empty when disabled. */
+    val customAppearanceJson: String = "",
+    val customColorsPresent: Boolean = false,
+    val imageEffectsPresent: Boolean = false,
+    val appearance: com.sukisu.ultra.ui.util.ResolvedAppearance? = null,
+    val appearanceData: com.sukisu.ultra.ui.util.AppearanceOverlayData? = null,
 )
 
 /**
@@ -131,7 +163,13 @@ data class ThemePackageOptions(
     val appIcon: Boolean = true,
     val customTexts: Boolean = true,
     val customTextGroups: Set<CustomTextGroup> = CustomTextGroup.entries.toSet(),
-    val customConfig: Boolean = true,
+    val interfaceMode: Boolean = true,
+    val interfaceSwitches: Boolean = true,
+    val interactionBehavior: Boolean = true,
+    val moduleDisplay: Boolean = true,
+    val customColors: Boolean = true,
+    val imageEffects: Boolean = true,
+    val bottomBarIcons: Boolean = true,
 )
 
 val ThemePackageOptionsSaver = listSaver<ThemePackageOptions, Boolean>(
@@ -149,7 +187,13 @@ val ThemePackageOptionsSaver = listSaver<ThemePackageOptions, Boolean>(
             it.customTextGroups.contains(CustomTextGroup.PAGE_MAIN),
             it.customTextGroups.contains(CustomTextGroup.PAGE_FEATURE),
             it.customTextGroups.contains(CustomTextGroup.SETTINGS),
-            it.customConfig,
+            it.interfaceMode,
+            it.interfaceSwitches,
+            it.interactionBehavior,
+            it.moduleDisplay,
+            it.customColors,
+            it.imageEffects,
+            it.bottomBarIcons,
         )
     },
     restore = {
@@ -168,7 +212,13 @@ val ThemePackageOptionsSaver = listSaver<ThemePackageOptions, Boolean>(
                 if (it.getOrElse(10) { true }) add(CustomTextGroup.PAGE_FEATURE)
                 if (it.getOrElse(11) { true }) add(CustomTextGroup.SETTINGS)
             },
-            customConfig = it.getOrElse(12) { true },
+            interfaceMode = it.getOrElse(12) { true },
+            interfaceSwitches = it.getOrElse(13) { true },
+            interactionBehavior = it.getOrElse(14) { true },
+            moduleDisplay = it.getOrElse(15) { true },
+            customColors = it.getOrElse(16) { true },
+            imageEffects = it.getOrElse(17) { true },
+            bottomBarIcons = it.getOrElse(18) { true },
         )
     },
 )
@@ -179,7 +229,9 @@ data class SettingsScreenActions(
     val onSetCheckCiUpdate: (Boolean) -> Unit,
     val onSetCheckModuleUpdate: (Boolean) -> Unit,
     val onSetAutoDeleteModuleZip: (Boolean) -> Unit,
+    val onSetAutoDeleteUpdateApk: (Boolean) -> Unit,
     val onOpenTheme: () -> Unit,
+    val onOpenThemeStore: () -> Unit = {},
     val onSetUiModeIndex: (Int) -> Unit,
     val onOpenProfileTemplate: () -> Unit,
     val onSetLanguage: (String) -> Unit,

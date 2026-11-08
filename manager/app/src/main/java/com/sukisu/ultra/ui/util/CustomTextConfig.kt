@@ -16,7 +16,7 @@ enum class CustomTextGroup(@StringRes val titleRes: Int) {
     SETTINGS(R.string.custom_text_group_settings),
 }
 
-/** A value the app fills into a custom text template at runtime. */
+
 enum class CustomTextArg(@StringRes val labelRes: Int) {
     VERSION_CODE(R.string.custom_text_arg_version_code),
 }
@@ -120,6 +120,7 @@ enum class CustomTextKey(
     SETTING_SOFT_REBOOT("settings.soft_reboot", R.string.settings_soft_reboot, R.string.settings_soft_reboot, CustomTextGroup.SETTINGS),
     SETTING_UMOUNT_MODULES_DEFAULT("settings.umount_modules_default", R.string.settings_umount_modules_default, R.string.settings_umount_modules_default, CustomTextGroup.SETTINGS),
     SETTING_AUTO_DELETE_MODULE_ZIP("settings.auto_delete_module_zip", R.string.settings_auto_delete_module_zip, R.string.settings_auto_delete_module_zip, CustomTextGroup.SETTINGS),
+    SETTING_AUTO_DELETE_UPDATE_APK("settings.auto_delete_update_apk", R.string.settings_auto_delete_update_apk, R.string.settings_auto_delete_update_apk, CustomTextGroup.SETTINGS),
     SETTING_WEB_DEBUGGING("settings.web_debugging", R.string.enable_web_debugging, R.string.enable_web_debugging, CustomTextGroup.SETTINGS),
     SETTING_AUTO_JAILBREAK("settings.auto_jailbreak", R.string.settings_auto_jailbreak, R.string.settings_auto_jailbreak, CustomTextGroup.SETTINGS),
     SETTING_TEMPORARY_ROOT_DURATION("settings.temporary_root_duration", R.string.temporary_root_duration_title, R.string.temporary_root_duration_title, CustomTextGroup.SETTINGS),
@@ -131,7 +132,7 @@ enum class CustomTextKey(
     }
 }
 
-/** Groups that currently have at least one customized text. */
+
 fun customTextGroupsIn(
     customTexts: Map<String, String>,
     customHomeTitle: String = "",
@@ -142,7 +143,7 @@ fun customTextGroupsIn(
     if (customHomeTitle.isNotBlank()) add(CustomTextGroup.HOME)
 }
 
-/** Keeps only the entries that belong to [groups]. */
+
 fun customTextsInGroups(
     customTexts: Map<String, String>,
     groups: Set<CustomTextGroup>,
@@ -188,7 +189,7 @@ fun CustomTextKey.splitTemplate(template: String): List<String> {
     return parts
 }
 
-/** Joins the editable pieces back into a template with canonical `%s` placeholders. */
+
 fun CustomTextKey.joinTemplate(parts: List<String>): String {
     if (formatArgs.isEmpty()) return parts.firstOrNull().orEmpty()
     if (parts.size != formatArgs.size + 1) return parts.joinToString("")

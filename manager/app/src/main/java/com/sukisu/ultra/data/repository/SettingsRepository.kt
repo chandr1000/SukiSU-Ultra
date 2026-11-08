@@ -5,7 +5,7 @@ import com.sukisu.ultra.ui.util.HomeCardSticker
 interface SettingsRepository {
     var customBackgroundUri: String
     var customBackgroundUpdatedAt: Long
-    /** Use the launcher wallpaper as the app background instead of [customBackgroundUri]. */
+    
     var useSystemWallpaper: Boolean
     /**
      * Derive the theme key color from the active background image. This and [keyColor] are
@@ -17,39 +17,71 @@ interface SettingsRepository {
     var customBackgroundBlurPercent: Int
     var customBackgroundScrimPercent: Int
     var backgroundAppearanceExpanded: Boolean
-    /** Expanded state of the top-level cards on the appearance page. */
+    
     var backgroundSectionExpanded: Boolean
     var themePackageSectionExpanded: Boolean
     var appearanceSectionExpanded: Boolean
     var homeCardSectionExpanded: Boolean
     var colorsSectionExpanded: Boolean
+    var bottomBarSectionExpanded: Boolean
+    var interactionSectionExpanded: Boolean
+    var detailsSectionExpanded: Boolean
     var customHomeTitle: String
     var customTexts: Map<String, String>
-    /** Base URL of the online theme catalog, entered in the manager. */
+    
     var themeStoreBaseUrl: String
-    /** Access token sent to the theme mirror. */
+    
     var themeStoreToken: String
-    /** Local author identity used to obtain automatic theme publishing. */
+    
     var themeStoreAuthorId: String
-    /** Last author name entered for theme submissions. */
+    
     var themeStoreAuthorName: String
-    /** Optional admin console URL shown for the default theme source. */
+    
     var themeStoreAdminUrl: String
-    /** Additional theme sources merged into the catalog; the default source is the fields above. */
+    
     var themeStoreExtraSources: List<com.sukisu.ultra.data.model.ThemeStoreSourceConfig>
+    
+    var themeStoreUploadSource: String
+    var themeStoreGridLayout: Boolean
     var homeCardImagePath: String
-    /** Hide the working text and version line on the home status card while a card image is set. */
+    
     var hideHomeCardStatusText: Boolean
-    /** Hide the check icon (Miuix) or ring decoration (Material) on the home status card. */
+    
     var hideHomeCardDecoration: Boolean
     var homeCardStickers: List<HomeCardSticker>
+    /** Custom bottom bar icon images keyed by [com.sukisu.ultra.ui.util.BottomBarIconSlot.key]. */
+    var bottomBarIcons: Map<String, String>
+    /** "classic" or "immersive"; see [com.sukisu.ultra.ui.util.HomeLayout]. */
+    var homeLayout: String
+    /** "start" or "end"; see [com.sukisu.ultra.ui.util.HomeStatusAlignment]. */
+    var homeStatusAlignment: String
+    /** Uniform scale for the immersive status area, coerced to the supported range. */
+    var homeStatusScale: Float
+    /** Independent scale for the working-status pill. */
+    var homePillScale: Float
+    /** Width of the immersive status cluster relative to the page content width. */
+    var homeStatusWidthFraction: Float
+    /** "window", "banner" or "off"; see [com.sukisu.ultra.ui.util.HomeCardImageStyle]. */
+    var homeCardImageStyle: String
+    /** Show the immersive card image even when no custom background is active. */
+    var showHomeCardImageWithoutBackground: Boolean
+    
+    var adaptiveThemeJson: String
+    
+    var adaptiveAppliedMode: Int
+    
+    var adaptiveDraftJson: String
+    /** Canonical JSON for the static colour/image-effect overlay; empty when disabled. */
+    var customAppearanceJson: String
     var uiMode: String
     var appLanguage: String
     var checkUpdate: Boolean
     var checkCiUpdate: Boolean
     var checkModuleUpdate: Boolean
     var autoDeleteModuleZip: Boolean
-    /** Id of the selected launcher icon (see [com.sukisu.ultra.ui.util.BuiltinAppIcons]). */
+    /** When enabled, a manager self-update installs without keeping the APK in Downloads. */
+    var autoDeleteUpdateApk: Boolean
+    
     var appIconId: String
     var appIconDynamicColor: Boolean
     var themeMode: Int
@@ -61,6 +93,8 @@ interface SettingsRepository {
     var enableSwipeDismiss: Boolean
     var pagerInterceptionMode: Int
     var enableBlur: Boolean
+    /** Progressive (edge gradient) blur behind the top and bottom bars. */
+    var enableProgressiveBlur: Boolean
     var enableFloatingBottomBar: Boolean
     var enableFloatingBottomBarBlur: Boolean
     var enableNavigationBadge: Boolean
@@ -76,7 +110,7 @@ interface SettingsRepository {
     var moduleSortNameOrder: String
     var moduleSortManual: Boolean
     var moduleManualOrder: String
-    /** Name of the [com.sukisu.ultra.ui.screen.modulerepo.RepoSort] entry. */
+    
     var moduleRepoSortOrder: String
     var superuserShowSystemApps: Boolean
     var superuserShowOnlyPrimaryUserApps: Boolean
@@ -84,7 +118,7 @@ interface SettingsRepository {
     var suLogFilters: Set<String>?
     var showFullStatus: Boolean
     var hideHomeWarnings: Boolean
-    /** Show the AI assistant card on the home page. Off disconnects the home entry entirely. */
+    
     var showAiHomeCard: Boolean
     var autoJailbreak: Boolean
     var useSoftReboot: Boolean

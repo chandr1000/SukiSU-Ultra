@@ -6,10 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +34,8 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import com.sukisu.ultra.ui.component.Storefront
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -57,29 +58,26 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import java.io.File
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.sukisu.ultra.KernelVersion
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.theme.LocalBackgroundImagePath
-import com.sukisu.ultra.ui.theme.backgroundAwareColor
-import com.sukisu.ultra.ui.component.WarningLevel
+import com.sukisu.ultra.ai.api.AiFeatureBridge
 import com.sukisu.ultra.ui.component.HomeCardStickerOverlays
+import com.sukisu.ultra.ui.component.WarningLevel
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.material.ExpressiveScaffold
 import com.sukisu.ultra.ui.component.material.IconTile
@@ -89,11 +87,14 @@ import com.sukisu.ultra.ui.component.material.TonalCard
 import com.sukisu.ultra.ui.component.material.expressiveTopAppBarColors
 import com.sukisu.ultra.ui.component.rebootlistpopup.RebootListPopup
 import com.sukisu.ultra.ui.component.statustag.StatusTag
-import com.sukisu.ultra.ai.api.AiFeatureBridge
-import com.sukisu.ultra.ui.util.module.LatestVersionInfo
-import com.sukisu.ultra.ui.util.customText
+import com.sukisu.ultra.ui.theme.LocalBackgroundImagePath
+import com.sukisu.ultra.ui.theme.backgroundAwareColor
 import com.sukisu.ultra.ui.util.CustomTextKey
+import com.sukisu.ultra.ui.util.HomeLayout
+import com.sukisu.ultra.ui.util.customText
 import com.sukisu.ultra.ui.util.drawPainterCover
+import com.sukisu.ultra.ui.util.module.LatestVersionInfo
+import java.io.File
 
 private val HeroShape = RoundedCornerShape(28.dp)
 private val TileShape = RoundedCornerShape(22.dp)
@@ -109,7 +110,7 @@ fun HomePagerMaterial(
 
     ExpressiveScaffold(
         containerColor = if (hasCustomBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { TopBar(title = customText(CustomTextKey.HOME_TITLE), scrollBehavior = scrollBehavior) },
+        topBar = { TopBar(scrollBehavior = scrollBehavior, onOpenThemeStore = actions.onOpenThemeStore) },
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         Column(
@@ -236,8 +237,8 @@ private fun UpdateCard(
 
 @Composable
 private fun TopBar(
-    title: String,
-    scrollBehavior: TopAppBarScrollBehavior? = null
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    onOpenThemeStore: () -> Unit = {},
 ) {
     val hasCustomBackground = LocalBackgroundImagePath.current.isNotEmpty()
     val displayTitle = customText(CustomTextKey.HOME_TITLE)
@@ -248,6 +249,14 @@ private fun TopBar(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        },
+        navigationIcon = {
+            IconButton(onClick = onOpenThemeStore) {
+                Icon(
+                    imageVector = Icons.Rounded.Storefront,
+                    contentDescription = customText(CustomTextKey.PAGE_THEME_STORE),
+                )
+            }
         },
         actions = { RebootListPopup() },
         colors = expressiveTopAppBarColors(
@@ -270,7 +279,9 @@ private fun StatusCard(
             actions.onInstallClick()
         }
     }
-    if (ksuActive) {
+    if (ksuActive && state.homeLayout == HomeLayout.IMMERSIVE) {
+        ImmersiveStatusCardMaterial(state = state, onClick = onClick)
+    } else if (ksuActive) {
         ActiveStatusCard(state = state, onClick = onClick)
     } else {
         InactiveStatusCard(
@@ -282,7 +293,6 @@ private fun StatusCard(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ActiveStatusCard(
     state: HomeUiState,
@@ -489,7 +499,7 @@ private fun StatsRow(
     state: HomeUiState,
     actions: HomeActions,
 ) {
-    val tiles = buildList<Triple<Int, Int, (() -> Unit)?>> {
+    val tiles = buildList {
         state.superuserCount?.let { add(Triple(it, R.string.superuser, actions.onSuperuserClick)) }
         state.moduleCount?.let { add(Triple(it, R.string.module, actions.onModuleClick)) }
         state.kpmCount?.let { add(Triple(it, R.string.kpm_title, null)) }

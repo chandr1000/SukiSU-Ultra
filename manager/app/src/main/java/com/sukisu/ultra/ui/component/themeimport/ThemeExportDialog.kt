@@ -16,6 +16,12 @@ fun ThemeExportDialog(
     availableCustomTextGroups: Set<CustomTextGroup>,
     onDismissRequest: () -> Unit,
     onConfirm: (ThemePackageOptions) -> Unit,
+    adaptive: Boolean = false,
+    hasCustomColors: Boolean = false,
+    hasImageEffects: Boolean = false,
+    immersiveHome: Boolean = false,
+    hasBottomBarIcons: Boolean = false,
+    onUpload: ((ThemePackageOptions) -> Unit)? = null,
 ) {
     ThemeOptionsDialog(
         show = show,
@@ -28,7 +34,21 @@ fun ThemeExportDialog(
         availableCustomTextGroups = availableCustomTextGroups,
         onDismissRequest = onDismissRequest,
         onConfirm = onConfirm,
-        formatVersion = com.sukisu.ultra.ui.util.ThemePackageStorage.CURRENT_VERSION,
-        forceMaterial = true,
+        formatVersion = when {
+            immersiveHome || hasBottomBarIcons ->
+                com.sukisu.ultra.ui.util.ThemePackageStorage.HOME_STATUS_VERSION
+
+            hasCustomColors || hasImageEffects ->
+                com.sukisu.ultra.ui.util.ThemePackageStorage.APPEARANCE_VERSION
+
+            adaptive -> com.sukisu.ultra.ui.util.ThemePackageStorage.ADAPTIVE_VERSION
+            else -> com.sukisu.ultra.ui.util.ThemePackageStorage.BASE_VERSION
+        },
+        adaptive = adaptive,
+        adaptiveNotice = R.string.theme_adaptive_export_notice,
+        hasCustomColors = hasCustomColors,
+        hasImageEffects = hasImageEffects,
+        hasBottomBarIcons = hasBottomBarIcons,
+        onUpload = onUpload,
     )
 }

@@ -15,6 +15,8 @@ data class ThemeStoreCatalog(
     val minFormatVersion: Int = 1,
     val supportedFormats: List<Int> = emptyList(),
     val generatedAt: String? = null,
+    /** Site-wide maintenance switch; when true the manager should not present the catalog. */
+    val maintenance: Boolean = false,
     val themes: List<ThemeStoreEntry> = emptyList(),
 )
 
@@ -24,8 +26,12 @@ data class ThemeStoreEntry(
     val version: Int = 1,
     val name: String = "",
     val author: String = "",
+    val authorHash: String = "",
     val description: String = "",
     val tags: List<String> = emptyList(),
+    
+    val adaptive: Boolean = false,
+    val r18: Boolean = false,
     val license: String = "",
     val minManagerVersion: Long = 0L,
     val formatVersion: Int = 1,
@@ -37,9 +43,13 @@ data class ThemeStoreEntry(
     val screenshotPaths: List<String> = emptyList(),
     val updatedAt: String = "",
     val changelog: String = "",
+    
+    val downloads: Long = 0L,
+    
+    val heat: Long = 0L,
 )
 
-/** An additional store source persisted in the manager settings. */
+
 @Serializable
 data class ThemeStoreSourceConfig(
     val id: String,
@@ -49,7 +59,7 @@ data class ThemeStoreSourceConfig(
     val adminUrl: String = "",
 )
 
-/** Response returned after a manager upload is queued for review. */
+
 @Serializable
 data class ThemeStoreSubmitResponse(
     val ok: Boolean = false,
@@ -60,4 +70,87 @@ data class ThemeStoreSubmitResponse(
     val sha256: String = "",
     val message: String = "",
     val error: String = "",
+)
+
+
+@Serializable
+data class ThemeStoreUploadInitRequest(
+    val filename: String,
+    val size: Long,
+    val fingerprint: String = "",
+    /**
+     * Preferred chunk size. Older mirrors ignore unknown fields and return their own
+     * value; the manager always uploads using the size echoed by the server.
+     */
+    val chunkSize: Long? = null,
+)
+
+
+@Serializable
+data class ThemeStoreHealth(
+    val ok: Boolean = false,
+    val status: String = "",
+    val version: String = "",
+    val uptimeSeconds: Long = 0L,
+    val checks: ThemeStoreHealthChecks = ThemeStoreHealthChecks(),
+)
+
+@Serializable
+data class ThemeStoreHealthChecks(
+    val database: ThemeStoreHealthCheck = ThemeStoreHealthCheck(),
+    val storage: ThemeStoreHealthCheck = ThemeStoreHealthCheck(),
+    val catalog: ThemeStoreHealthCheck = ThemeStoreHealthCheck(),
+    val pending: ThemeStoreHealthCheck = ThemeStoreHealthCheck(),
+)
+
+
+@Serializable
+data class ThemeStoreHealthCheck(
+    val ok: Boolean = false,
+    val latencyMs: Long? = null,
+    val themes: Int? = null,
+    val count: Int? = null,
+    val backend: String = "",
+    val generatedAt: String = "",
+)
+
+
+@Serializable
+data class ThemeStoreUploadSession(
+    val ok: Boolean = false,
+    val uploadId: String = "",
+    val filename: String = "",
+    val size: Long = 0L,
+    val chunkSize: Long = 0L,
+    val totalChunks: Long = 0L,
+    val received: List<Long> = emptyList(),
+    val receivedBytes: Long = 0L,
+    val resumed: Boolean = false,
+    // null means the legacy server has neither completion nor attachment references.
+    val uploadTargets: List<ThemeStoreUploadTarget>? = null,
+    val receivedLocal: List<Long> = emptyList(),
+    val error: String? = null,
+)
+
+@Serializable
+data class ThemeStoreUploadTarget(
+    val id: String = "",
+    val name: String = "",
+    val baseUrl: String = "",
+    val ticket: String = "",
+)
+
+@Serializable
+data class ThemeStoreUploadAck(
+    val ok: Boolean = false,
+    val index: Long? = null,
+    val sha256: String = "",
+)
+
+@Serializable
+data class ThemeStoreUploadComplete(
+    val ok: Boolean = false,
+    val complete: Boolean = false,
+    val missing: List<Long> = emptyList(),
+    val error: String? = null,
 )

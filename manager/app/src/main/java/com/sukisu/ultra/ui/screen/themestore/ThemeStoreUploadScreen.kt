@@ -11,7 +11,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,33 +29,35 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Article
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.PhotoLibrary
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon as MaterialIcon
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text as MaterialText
-import androidx.compose.material3.TextButton as MaterialTextButton
 import androidx.compose.material3.TopAppBar as MaterialTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -77,16 +79,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.sukisu.ultra.BuildConfig
 import com.sukisu.ultra.R
 import com.sukisu.ultra.data.model.AccountSession
-import com.sukisu.ultra.data.model.AccountSubmission
 import com.sukisu.ultra.data.model.AccountThemeSummary
 import com.sukisu.ultra.data.repository.ThemeStoreRepository
 import com.sukisu.ultra.ui.component.material.ExpressiveScaffold
 import com.sukisu.ultra.ui.component.material.TopBarBackButton
+import com.sukisu.ultra.ui.util.ThemePackageStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -110,52 +113,65 @@ internal fun ThemeStoreUploadScreen(
     source: ThemeStoreSource,
     accountSession: AccountSession?,
     autoThemeId: String?,
-    availableThemes: List<AccountThemeSummary>,
+    editingTheme: AccountThemeSummary?,
+    editPrefill: ThemeStoreEditPrefill? = null,
+    initialAdaptiveTheme: Boolean = false,
+    initialCurrentTheme: Boolean = false,
     optionsLoading: Boolean,
     optionsError: String?,
-    submissions: List<AccountSubmission>,
-    submissionsLoading: Boolean,
-    submissionsError: String?,
     uploadPhase: ThemeStoreUploadPhase,
     uploadProgress: Float,
+    uploadTransferredBytes: Long,
+    uploadTotalBytes: Long,
+    uploadSpeedBytesPerSecond: Long,
+    uploadEtaSeconds: Long?,
     submitting: Boolean,
     errorText: String?,
-    withdrawnThemes: List<AccountThemeSummary>,
-    withdrawingThemeId: String?,
-    withdrawError: String?,
-    restoringThemeId: String?,
-    restoreError: String?,
-    onRefreshSubmissions: () -> Unit,
-    onWithdrawTheme: (String) -> Unit,
-    onRestoreTheme: (String) -> Unit,
     onBack: () -> Unit,
     onLogin: () -> Unit,
     onSubmit: (ThemeStoreUploadInput) -> Unit,
     onExportCurrentPreset: suspend () -> File?,
+    onLoadAdaptiveTheme: suspend () -> File?,
 ) {
-    var selectedUpdateId by rememberSaveable { mutableStateOf("") }
-    var version by rememberSaveable { mutableStateOf("1") }
-    var name by rememberSaveable { mutableStateOf("") }
-    var tags by rememberSaveable { mutableStateOf("") }
-    var license by rememberSaveable { mutableStateOf("CC-BY-4.0") }
-    var minManagerVersion by rememberSaveable { mutableStateOf(BuildConfig.VERSION_CODE.toString()) }
-    var description by rememberSaveable { mutableStateOf("") }
-    var changelog by rememberSaveable { mutableStateOf("") }
+    val editingId = editingTheme?.id.orEmpty()
+    var selectedUpdateId by rememberSaveable(editingId) { mutableStateOf(editingId) }
+    var version by rememberSaveable(editingId) {
+        mutableStateOf(editingTheme?.version?.plus(1)?.toString() ?: "1")
+    }
+    var name by rememberSaveable(editingId) { mutableStateOf(editingTheme?.name.orEmpty()) }
+    var tags by rememberSaveable(editingId) {
+        mutableStateOf(editingTheme?.tags?.joinToString(", ").orEmpty())
+    }
+    var license by rememberSaveable(editingId) {
+        mutableStateOf(editingTheme?.license?.takeIf { it.isNotBlank() } ?: "CC-BY-4.0")
+    }
+    var minManagerVersion by rememberSaveable(editingId) {
+        mutableStateOf(
+            editingTheme?.minManagerVersion?.toString() ?: BuildConfig.VERSION_CODE.toString(),
+        )
+    }
+    var description by rememberSaveable(editingId) {
+        mutableStateOf(editingTheme?.description.orEmpty())
+    }
+    var changelog by rememberSaveable(editingId) {
+        mutableStateOf(editingTheme?.changelog.orEmpty())
+    }
     var presetBusy by remember { mutableStateOf(false) }
     var presetError by remember { mutableStateOf<String?>(null) }
-    var confirmWithdraw by remember { mutableStateOf<AccountSubmission?>(null) }
-    var confirmRestore by remember { mutableStateOf<AccountThemeSummary?>(null) }
-    var packageLabel by rememberSaveable { mutableStateOf<String?>(null) }
-    var packageUri by rememberSaveable(stateSaver = UploadUriSaver) {
+    var adaptiveBusy by remember { mutableStateOf(false) }
+    var packageLabel by rememberSaveable(editingId) { mutableStateOf<String?>(null) }
+    var packageAdaptive by rememberSaveable { mutableStateOf(false) }
+    var initialPackageApplied by rememberSaveable { mutableStateOf(false) }
+    var packageUri by rememberSaveable(editingId, stateSaver = UploadUriSaver) {
         mutableStateOf(null)
     }
-    var previewUri by rememberSaveable(stateSaver = UploadUriSaver) {
+    var previewUri by rememberSaveable(editingId, stateSaver = UploadUriSaver) {
         mutableStateOf(null)
     }
-    var avatarUri by rememberSaveable(stateSaver = UploadUriSaver) {
+    var avatarUri by rememberSaveable(editingId, stateSaver = UploadUriSaver) {
         mutableStateOf(null)
     }
-    var screenshotUris by rememberSaveable(stateSaver = UploadUriListSaver) {
+    var screenshotUris by rememberSaveable(editingId, stateSaver = UploadUriListSaver) {
         mutableStateOf(emptyList())
     }
 
@@ -176,8 +192,76 @@ internal fun ThemeStoreUploadScreen(
         screenshotUris = it.take(6)
     }
 
+    LaunchedEffect(packageUri) {
+        val uri = packageUri
+        packageAdaptive = false
+        if (uri == null) {
+            return@LaunchedEffect
+        }
+        val data = withContext(Dispatchers.IO) {
+            ThemePackageStorage.inspect(context, uri).getOrNull()
+        } ?: return@LaunchedEffect
+        packageAdaptive = data.adaptive == true
+        val values = tags.split(Regex("[,，\n]"))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toMutableList()
+        if (packageAdaptive) {
+            val hasAdaptive = values.any {
+                canonicalThemeTag(it) == ThemePackageStorage.ADAPTIVE_TAG
+            }
+            if (!hasAdaptive) {
+                if (values.size >= 10) values.removeAt(values.lastIndex)
+                values.add(0, ThemePackageStorage.ADAPTIVE_TAG)
+                tags = values.joinToString(", ")
+            }
+        } else if (values.any { canonicalThemeTag(it) == ThemePackageStorage.ADAPTIVE_TAG }) {
+            // Drop the tag that the previous adaptive package added automatically.
+            values.removeAll { canonicalThemeTag(it) == ThemePackageStorage.ADAPTIVE_TAG }
+            tags = values.joinToString(", ")
+        }
+    }
+
     val noFile = stringResource(R.string.theme_store_upload_no_file)
     val presetName = stringResource(R.string.theme_store_upload_current_preset)
+    val adaptivePresetName = stringResource(R.string.theme_store_upload_adaptive_preset)
+    LaunchedEffect(initialAdaptiveTheme, initialPackageApplied) {
+        if (!initialAdaptiveTheme || initialPackageApplied) return@LaunchedEffect
+        adaptiveBusy = true
+        val file = runCatching { onLoadAdaptiveTheme() }.getOrNull()
+        adaptiveBusy = false
+        if (file == null) {
+            presetError = context.getString(R.string.theme_store_upload_adaptive_missing)
+            return@LaunchedEffect
+        }
+        initialPackageApplied = true
+        packageUri = Uri.fromFile(file)
+        packageLabel = adaptivePresetName
+    }
+    LaunchedEffect(initialCurrentTheme, initialPackageApplied) {
+        if (!initialCurrentTheme || initialPackageApplied) return@LaunchedEffect
+        presetBusy = true
+        val file = runCatching { onExportCurrentPreset() }.getOrNull()
+        presetBusy = false
+        if (file == null) {
+            presetError = context.getString(R.string.theme_store_upload_preset_failed)
+            return@LaunchedEffect
+        }
+        initialPackageApplied = true
+        packageUri = Uri.fromFile(file)
+        packageLabel = presetName
+    }
+    // Editing starts from the files that are already published; the pickers only
+    // need to be touched when something actually changes.
+    LaunchedEffect(editPrefill, editingId) {
+        val prefill = editPrefill ?: return@LaunchedEffect
+        if (prefill.loading || prefill.themeId != editingId) return@LaunchedEffect
+        prefill.packageUri?.let { packageUri = it }
+        prefill.previewUri?.let { previewUri = it }
+        prefill.avatarUri?.let { avatarUri = it }
+        if (prefill.screenshotUris.isNotEmpty()) screenshotUris = prefill.screenshotUris
+    }
+
     val pickedPackageName = remember(packageUri) {
         packageUri?.let { queryDisplayName(context, it) } ?: noFile
     }
@@ -238,7 +322,13 @@ internal fun ThemeStoreUploadScreen(
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .toMutableList()
-        if (!values.remove(tag) && values.size < 10) values.add(tag)
+        val canonical = canonicalThemeTag(tag)
+        val existing = values.indexOfFirst { canonicalThemeTag(it) == canonical }
+        if (existing >= 0) {
+            values.removeAt(existing)
+        } else if (values.size < 10) {
+            values.add(tag)
+        }
         tags = values.joinToString(", ")
     }
 
@@ -253,8 +343,20 @@ internal fun ThemeStoreUploadScreen(
                 navigationIcon = { TopBarBackButton(onClick = onBack) },
                 title = {
                     MaterialText(
-                        text = stringResource(R.string.theme_store_upload_title),
-                        style = MaterialTheme.typography.titleLarge,
+                        text = stringResource(
+                            if (editingTheme != null) R.string.theme_store_edit_title
+                            else R.string.theme_store_upload_title,
+                        ),
+                    )
+                },
+                subtitle = {
+                    MaterialText(
+                        text = stringResource(
+                            R.string.theme_store_upload_target_source,
+                            source.displayName(),
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -271,6 +373,10 @@ internal fun ThemeStoreUploadScreen(
                 submitting = submitting,
                 phase = uploadPhase,
                 progress = uploadProgress,
+                transferredBytes = uploadTransferredBytes,
+                totalBytes = uploadTotalBytes,
+                speedBytesPerSecond = uploadSpeedBytesPerSecond,
+                etaSeconds = uploadEtaSeconds,
                 canSubmit = canSubmit,
                 errorText = errorText,
                 onSubmit = ::submit,
@@ -287,58 +393,43 @@ internal fun ThemeStoreUploadScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item(key = "intro") {
-                UploadIntroCard(source = source)
-            }
             item(key = "basic") {
-                UploadSectionCard(title = stringResource(R.string.theme_store_upload_section_basic)) {
+                ThemeStoreSectionCard(
+                    title = stringResource(R.string.theme_store_upload_section_basic),
+                    icon = Icons.Rounded.Description,
+                ) {
                     UploadTextField(
                         value = displayedThemeId,
                         onValueChange = {},
                         label = stringResource(R.string.theme_store_upload_id),
                         enabled = false,
                     )
-                    if (optionsLoading) {
-                        UploadHint(stringResource(R.string.theme_store_upload_id_loading))
-                    } else if (!optionsError.isNullOrBlank()) {
-                        UploadHint(
-                            stringResource(R.string.theme_store_upload_id_error, optionsError),
-                        )
-                    } else {
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            AssistChip(
-                                onClick = {
-                                    selectedUpdateId = ""
-                                    version = "1"
-                                    name = ""
-                                    description = ""
-                                    tags = ""
-                                    license = "CC-BY-4.0"
-                                    minManagerVersion = BuildConfig.VERSION_CODE.toString()
-                                    changelog = ""
-                                },
-                                label = { MaterialText(stringResource(R.string.theme_store_upload_new_theme)) },
-                            )
-                            availableThemes.forEach { theme ->
-                                AssistChip(
-                                    onClick = {
-                                        selectedUpdateId = theme.id
-                                        version = (theme.version + 1).toString()
-                                        name = theme.name
-                                        description = theme.description
-                                        tags = theme.tags.joinToString(", ")
-                                        license = theme.license
-                                        minManagerVersion = theme.minManagerVersion.toString()
-                                        changelog = theme.changelog
-                                    },
-                                    label = { MaterialText(theme.id) },
+                    when {
+                        editingTheme != null -> {
+                            UploadHint(stringResource(R.string.theme_store_edit_id_hint))
+                            when {
+                                editPrefill?.loading == true -> UploadHint(
+                                    stringResource(R.string.theme_store_edit_prefill_loading),
+                                )
+
+                                !editPrefill?.error.isNullOrBlank() -> UploadHint(
+                                    editPrefill.error,
+                                    isError = true,
                                 )
                             }
                         }
-                        UploadHint(stringResource(R.string.theme_store_upload_id_hint))
+
+                        optionsLoading -> UploadHint(
+                            stringResource(R.string.theme_store_upload_id_loading),
+                        )
+
+                        !optionsError.isNullOrBlank() -> UploadHint(
+                            stringResource(R.string.theme_store_upload_id_error, optionsError),
+                        )
+
+                        else -> UploadHint(
+                            stringResource(R.string.theme_store_upload_id_hint),
+                        )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         UploadTextField(
@@ -374,13 +465,29 @@ internal fun ThemeStoreUploadScreen(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        listOf("light", "dark", "pink", "cute", "minimal", "gradient", "anime", "blue", "purple", "green")
+                        listOf(
+                            ThemePackageStorage.ADAPTIVE_TAG,
+                            R18_TAG,
+                            "light",
+                            "dark",
+                            "pink",
+                            "cute",
+                            "minimal",
+                            "gradient",
+                            "anime",
+                            "blue",
+                            "purple",
+                            "green",
+                        )
                             .forEach { tag ->
                                 FilterChip(
-                                    selected = tagValues.contains(tag),
+                                    selected = tagValues.any {
+                                        canonicalThemeTag(it) == canonicalThemeTag(tag)
+                                    },
                                     onClick = { toggleTag(tag) },
                                     enabled = !submitting,
-                                    label = { MaterialText(tag) },
+                                    label = { MaterialText(themeTagLabel(tag)) },
+                                    shapes = FilterChipDefaults.shapes(),
                                 )
                             }
                     }
@@ -410,28 +517,34 @@ internal fun ThemeStoreUploadScreen(
                                 enabled = !submitting,
                                 label = {
                                     MaterialText(
-                                        if (option.isBlank()) {
+                                        option.ifBlank {
                                             stringResource(R.string.theme_store_license_unspecified)
-                                        } else {
-                                            option
                                         },
                                     )
                                 },
+                                shapes = FilterChipDefaults.shapes(),
                             )
                         }
                     }
                 }
             }
             item(key = "author") {
-                UploadSectionCard(title = stringResource(R.string.theme_store_upload_section_author)) {
+                ThemeStoreSectionCard(
+                    title = stringResource(R.string.theme_store_upload_section_author),
+                    icon = Icons.Rounded.Person,
+                ) {
+                    UploadHint(
+                        stringResource(R.string.theme_store_upload_source_preference_hint),
+                    )
                     if (accountSession == null) {
-                        UploadHint(
-                            stringResource(R.string.theme_store_upload_login_required),
+                        ThemeStoreInlineNotice(
+                            text = stringResource(R.string.theme_store_upload_login_required),
                             isError = true,
                         )
                         Button(
                             onClick = onLogin,
                             modifier = Modifier.fillMaxWidth(),
+                            shapes = ButtonDefaults.shapes(),
                         ) {
                             MaterialText(stringResource(R.string.theme_store_upload_relogin))
                         }
@@ -474,200 +587,11 @@ internal fun ThemeStoreUploadScreen(
                     }
                 }
             }
-            item(key = "submissions") {
-                UploadSectionCard(title = stringResource(R.string.theme_store_upload_submissions_title)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        MaterialText(
-                            text = stringResource(R.string.theme_store_upload_submissions_recent),
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.weight(1f),
-                        )
-                        MaterialTextButton(
-                            onClick = onRefreshSubmissions,
-                            enabled = !submissionsLoading,
-                        ) {
-                            MaterialText(stringResource(R.string.theme_store_upload_refresh))
-                        }
-                    }
-                    when {
-                        submissionsLoading -> Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            UploadHint(stringResource(R.string.theme_store_upload_submissions_loading))
-                        }
-                        !submissionsError.isNullOrBlank() -> UploadHint(
-                            submissionsError,
-                            isError = true,
-                        )
-                        submissions.isEmpty() -> UploadHint(
-                            stringResource(R.string.theme_store_upload_submissions_empty),
-                        )
-                        else -> submissions.take(5).forEach { submission ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    MaterialText(
-                                        text = submission.name
-                                            ?.takeIf { it.isNotBlank() }
-                                            ?: submission.id.ifBlank { submission.submissionId },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                    MaterialText(
-                                        text = if (submission.sha256.isNotBlank()) {
-                                            stringResource(
-                                                R.string.theme_store_upload_submission_meta,
-                                                submission.version,
-                                                submission.id.ifBlank { "—" },
-                                                submission.sha256.take(16),
-                                            )
-                                        } else {
-                                            stringResource(
-                                                R.string.theme_store_upload_submission_meta_no_sha,
-                                                submission.version,
-                                                submission.id.ifBlank { "—" },
-                                            )
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    submission.rejectReason?.takeIf { it.isNotBlank() }?.let { reason ->
-                                        MaterialText(
-                                            text = stringResource(
-                                                R.string.theme_store_upload_submission_reason,
-                                                reason,
-                                            ),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                    }
-                                }
-                                MaterialText(
-                                    text = when (submission.status) {
-                                        "pending" -> stringResource(R.string.theme_store_upload_status_pending)
-                                        "approved" -> stringResource(R.string.theme_store_upload_status_approved)
-                                        "rejected" -> stringResource(R.string.theme_store_upload_status_rejected)
-                                        "withdrawn" -> stringResource(R.string.theme_store_upload_status_withdrawn)
-                                        else -> submission.status
-                                    },
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = when (submission.status) {
-                                        "approved" -> MaterialTheme.colorScheme.primary
-                                        "pending" -> MaterialTheme.colorScheme.tertiary
-                                        "rejected" -> MaterialTheme.colorScheme.error
-                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                )
-                                if (submission.status == "approved") {
-                                    MaterialTextButton(
-                                        onClick = { confirmWithdraw = submission },
-                                        enabled = withdrawingThemeId == null,
-                                    ) {
-                                        if (withdrawingThemeId == submission.id) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp,
-                                            )
-                                        } else {
-                                            MaterialText(
-                                                stringResource(R.string.theme_store_upload_withdraw),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (withdrawError != null) {
-                                UploadHint(withdrawError, isError = true)
-                            }
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            )
-                        }
-                    }
-                }
-            }
-            if (withdrawnThemes.isNotEmpty()) {
-                item(key = "withdrawn") {
-                    UploadSectionCard(
-                        title = stringResource(R.string.theme_store_upload_withdrawn_title),
-                    ) {
-                        withdrawnThemes.forEach { theme ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    MaterialText(
-                                        text = theme.name.ifBlank { theme.id },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                    MaterialText(
-                                        text = stringResource(
-                                            R.string.theme_store_upload_submission_meta_no_sha,
-                                            theme.version,
-                                            theme.id,
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    val expires = theme.expiresAt
-                                        ?.replace('T', ' ')
-                                        ?.take(16)
-                                        .orEmpty()
-                                    if (expires.isNotBlank()) {
-                                        MaterialText(
-                                            text = stringResource(
-                                                R.string.theme_store_upload_withdrawn_until,
-                                                expires,
-                                            ),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.tertiary,
-                                        )
-                                    }
-                                }
-                                MaterialTextButton(
-                                    onClick = { confirmRestore = theme },
-                                    enabled = restoringThemeId == null,
-                                ) {
-                                    if (restoringThemeId == theme.id) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                    } else {
-                                        MaterialText(
-                                            stringResource(R.string.theme_store_upload_restore),
-                                        )
-                                    }
-                                }
-                            }
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            )
-                        }
-                        if (restoreError != null) {
-                            UploadHint(restoreError, isError = true)
-                        }
-                    }
-                }
-            }
             item(key = "about") {
-                UploadSectionCard(title = stringResource(R.string.theme_store_upload_section_about)) {
+                ThemeStoreSectionCard(
+                    title = stringResource(R.string.theme_store_upload_section_about),
+                    icon = Icons.AutoMirrored.Rounded.Article,
+                ) {
                     UploadTextField(
                         value = description,
                         onValueChange = { description = it },
@@ -690,11 +614,16 @@ internal fun ThemeStoreUploadScreen(
                             "Coolapk" to "yourname@coolapk",
                             "Telegram" to "yourname@telegram",
                             "Weibo" to "yourname@weibo",
+                            "Xiaohongshu" to "yourname@xiaohongshu",
+                            "XDA" to "yourname@xda",
+                            "YouTube" to "yourname@youtube",
+                            "Afdian" to "yourname@afdian",
                         ).forEach { (label, mention) ->
                             AssistChip(
                                 onClick = { appendMention(mention) },
                                 label = { MaterialText(label) },
                                 enabled = !submitting,
+                                shape = MaterialTheme.shapes.small,
                             )
                         }
                     }
@@ -710,7 +639,10 @@ internal fun ThemeStoreUploadScreen(
                 }
             }
             item(key = "files") {
-                UploadSectionCard(title = stringResource(R.string.theme_store_upload_section_files)) {
+                ThemeStoreSectionCard(
+                    title = stringResource(R.string.theme_store_upload_section_files),
+                    icon = Icons.Rounded.Folder,
+                ) {
                     UploadPickerRow(
                         icon = Icons.Rounded.Folder,
                         label = stringResource(R.string.theme_store_upload_package),
@@ -718,7 +650,20 @@ internal fun ThemeStoreUploadScreen(
                         enabled = !submitting,
                         onClick = { packagePicker.launch(arrayOf("*/*")) },
                     )
-                    MaterialTextButton(
+                    if (packageAdaptive) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            AdaptiveThemeBadge()
+                            MaterialText(
+                                text = stringResource(R.string.theme_adaptive_upload_notice),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    FilledTonalButton(
                         onClick = {
                             scope.launch {
                                 presetBusy = true
@@ -733,19 +678,71 @@ internal fun ThemeStoreUploadScreen(
                                 presetBusy = false
                             }
                         },
-                        enabled = !submitting && !presetBusy,
+                        enabled = !submitting && !presetBusy && !adaptiveBusy,
+                        shapes = ButtonDefaults.shapes(),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
+                        MaterialIcon(
+                            imageVector = Icons.Rounded.Phone,
+                            contentDescription = null,
+                        )
                         MaterialText(
                             text = stringResource(
                                 if (presetBusy) R.string.theme_store_upload_generating
                                 else R.string.theme_store_upload_use_current,
                             ),
+                            modifier = Modifier.padding(start = 8.dp),
                         )
                     }
+                    Spacer(Modifier.height(4.dp))
+                    FilledTonalButton(
+                        onClick = {
+                            scope.launch {
+                                adaptiveBusy = true
+                                presetError = null
+                                val file = runCatching { onLoadAdaptiveTheme() }.getOrNull()
+                                if (file != null) {
+                                    packageUri = Uri.fromFile(file)
+                                    packageLabel = adaptivePresetName
+                                } else {
+                                    presetError = context.getString(
+                                        R.string.theme_store_upload_adaptive_missing,
+                                    )
+                                }
+                                adaptiveBusy = false
+                            }
+                        },
+                        enabled = !submitting && !adaptiveBusy && !presetBusy,
+                        shapes = ButtonDefaults.shapes(),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        MaterialIcon(
+                            imageVector = Icons.Rounded.AutoAwesome,
+                            contentDescription = null,
+                        )
+                        MaterialText(
+                            text = stringResource(
+                                if (adaptiveBusy) R.string.theme_store_upload_generating
+                                else R.string.theme_store_upload_use_adaptive,
+                            ),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    UploadHint(stringResource(R.string.theme_store_upload_adaptive_hint))
                     UploadHint(stringResource(R.string.theme_store_upload_current_hint))
                     if (presetError != null) {
-                        UploadHint(presetError.orEmpty(), isError = true)
+                        ThemeStoreInlineNotice(
+                            text = presetError.orEmpty(),
+                            isError = true,
+                        )
                     }
                     UploadPickerRow(
                         icon = Icons.Rounded.Image,
@@ -763,153 +760,13 @@ internal fun ThemeStoreUploadScreen(
                         onClick = { screenshotPicker.launch("image/*") },
                     )
                     if (packageUri == null || previewUri == null) {
-                        UploadHint(
-                            stringResource(R.string.theme_store_upload_files_required),
+                        ThemeStoreInlineNotice(
+                            text = stringResource(R.string.theme_store_upload_files_required),
                             isError = true,
                         )
                     }
                 }
             }
-        }
-    }
-    confirmWithdraw?.let { submission ->
-        AlertDialog(
-            onDismissRequest = { confirmWithdraw = null },
-            title = {
-                MaterialText(stringResource(R.string.theme_store_upload_withdraw_title))
-            },
-            text = {
-                MaterialText(
-                    stringResource(
-                        R.string.theme_store_upload_withdraw_confirm,
-                        submission.name
-                            ?.takeIf { it.isNotBlank() }
-                            ?: submission.id.ifBlank { submission.submissionId },
-                    ),
-                )
-            },
-            confirmButton = {
-                MaterialTextButton(
-                    onClick = {
-                        confirmWithdraw = null
-                        onWithdrawTheme(submission.id)
-                    },
-                ) {
-                    MaterialText(stringResource(R.string.theme_store_upload_withdraw))
-                }
-            },
-            dismissButton = {
-                MaterialTextButton(onClick = { confirmWithdraw = null }) {
-                    MaterialText(stringResource(R.string.theme_store_upload_cancel))
-                }
-            },
-        )
-    }
-    confirmRestore?.let { theme ->
-        AlertDialog(
-            onDismissRequest = { confirmRestore = null },
-            title = {
-                MaterialText(stringResource(R.string.theme_store_upload_restore_title))
-            },
-            text = {
-                MaterialText(
-                    stringResource(
-                        R.string.theme_store_upload_restore_confirm,
-                        theme.name.ifBlank { theme.id },
-                    ),
-                )
-            },
-            confirmButton = {
-                MaterialTextButton(
-                    onClick = {
-                        confirmRestore = null
-                        onRestoreTheme(theme.id)
-                    },
-                ) {
-                    MaterialText(stringResource(R.string.theme_store_upload_restore))
-                }
-            },
-            dismissButton = {
-                MaterialTextButton(onClick = { confirmRestore = null }) {
-                    MaterialText(stringResource(R.string.theme_store_upload_cancel))
-                }
-            },
-        )
-    }
-}
-
-@Composable
-private fun UploadIntroCard(source: ThemeStoreSource) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(18.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                MaterialIcon(
-                    imageVector = Icons.Rounded.FileUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                MaterialText(
-                    text = stringResource(R.string.theme_store_upload_summary),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                MaterialText(
-                    text = if (source.isDefault) {
-                        stringResource(R.string.theme_store_default_source)
-                    } else {
-                        source.name.ifBlank { source.baseUrl }
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UploadSectionCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            MaterialText(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            content()
         }
     }
 }
@@ -933,7 +790,7 @@ private fun UploadTextField(
         enabled = enabled,
         singleLine = singleLine,
         minLines = minLines,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         textStyle = MaterialTheme.typography.bodyLarge,
     )
@@ -943,7 +800,7 @@ private fun UploadTextField(
 private fun UploadAuthorAvatar(url: String, token: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -952,14 +809,7 @@ private fun UploadAuthorAvatar(url: String, token: String) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(url)
-                    .apply {
-                        if (token.isNotBlank()) {
-                            addHeader(ThemeStoreRepository.TOKEN_HEADER, token)
-                        }
-                    }
-                    .build(),
+                model = themeImageRequest(LocalContext.current, url, token),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -991,13 +841,13 @@ private fun UploadPickerRow(
     enabled: Boolean,
     onClick: () -> Unit,
     thumbnail: Uri? = null,
-    thumbnailShape: Shape = RoundedCornerShape(12.dp),
+    thumbnailShape: Shape = MaterialTheme.shapes.small,
 ) {
     Surface(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -1073,6 +923,10 @@ private fun UploadSubmitBar(
     submitting: Boolean,
     phase: ThemeStoreUploadPhase,
     progress: Float,
+    transferredBytes: Long,
+    totalBytes: Long,
+    speedBytesPerSecond: Long,
+    etaSeconds: Long?,
     canSubmit: Boolean,
     errorText: String?,
     onSubmit: () -> Unit,
@@ -1094,31 +948,78 @@ private fun UploadSubmitBar(
             if (submitting) {
                 when (phase) {
                     ThemeStoreUploadPhase.PREPARING,
-                    ThemeStoreUploadPhase.VERIFYING -> LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    ThemeStoreUploadPhase.UPLOADING -> LinearProgressIndicator(
-                        progress = { progress.coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    ThemeStoreUploadPhase.VERIFYING -> {
+                        LinearWavyProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        UploadHint(
+                            stringResource(
+                                if (phase == ThemeStoreUploadPhase.PREPARING) {
+                                    R.string.theme_store_upload_phase_preparing
+                                } else {
+                                    R.string.theme_store_upload_phase_verifying
+                                },
+                            ),
+                        )
+                    }
+
+                    ThemeStoreUploadPhase.UPLOADING -> {
+                        LinearWavyProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            MaterialText(
+                                text = stringResource(
+                                    R.string.theme_store_upload_phase_uploading,
+                                    (progress.coerceIn(0f, 1f) * 100).roundToInt(),
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            ThemeStoreSpeedBadge(speedBytesPerSecond)
+                        }
+                        if (totalBytes > 0L) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                MaterialText(
+                                    text = stringResource(
+                                        R.string.theme_store_transfer_bytes,
+                                        formatTransferBytes(transferredBytes),
+                                        formatTransferBytes(totalBytes),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                etaSeconds?.let { eta ->
+                                    MaterialText(
+                                        text = stringResource(
+                                            R.string.theme_store_transfer_eta,
+                                            formatTransferEta(eta),
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     else -> Unit
                 }
-                UploadHint(
-                    when (phase) {
-                        ThemeStoreUploadPhase.PREPARING ->
-                            stringResource(R.string.theme_store_upload_phase_preparing)
-                        ThemeStoreUploadPhase.UPLOADING -> stringResource(
-                            R.string.theme_store_upload_phase_uploading,
-                            (progress.coerceIn(0f, 1f) * 100).roundToInt(),
-                        )
-                        ThemeStoreUploadPhase.VERIFYING ->
-                            stringResource(R.string.theme_store_upload_phase_verifying)
-                        else -> ""
-                    },
-                )
             }
             when {
-                !errorText.isNullOrBlank() -> UploadHint(errorText, isError = true)
+                !errorText.isNullOrBlank() -> ThemeStoreInlineNotice(
+                    text = errorText,
+                    isError = true,
+                )
                 !submitting && !canSubmit -> UploadHint(
                     stringResource(R.string.theme_store_upload_incomplete),
                 )
@@ -1129,13 +1030,14 @@ private fun UploadSubmitBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(50),
+                shapes = ButtonDefaults.shapes(),
             ) {
                 if (submitting) {
-                    CircularProgressIndicator(
+                    CircularWavyProgressIndicator(
                         modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onPrimary,
+                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.24f),
+                        stroke = Stroke(width = 2f),
                     )
                     Spacer(Modifier.width(8.dp))
                     MaterialText(stringResource(R.string.theme_store_upload_submitting_short))

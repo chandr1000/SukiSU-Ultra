@@ -26,14 +26,27 @@ fun ThemeImportDialog(
         show = show,
         title = stringResource(R.string.theme_import_dialog_title),
         message = stringResource(R.string.theme_import_dialog_message),
-        hasBackgroundImage = theme.backgroundPath != null,
-        hasCardImage = theme.cardBackgroundPath != null,
-        hasStickers = theme.stickerPaths.isNotEmpty(),
+        hasBackgroundImage = theme.backgroundPath != null ||
+            theme.light?.backgroundPath != null ||
+            theme.dark?.backgroundPath != null ||
+            (!theme.isAdaptive && data.hasBackground == false),
+        hasCardImage = theme.cardBackgroundPath != null ||
+            theme.light?.cardBackgroundPath != null ||
+            theme.dark?.cardBackgroundPath != null ||
+            (!theme.isAdaptive && data.hasCardBackground == false),
+        hasStickers = theme.stickerPaths.isNotEmpty() ||
+            theme.light?.stickerPaths?.isNotEmpty() == true ||
+            theme.dark?.stickerPaths?.isNotEmpty() == true ||
+            (!theme.isAdaptive && data.homeCardStickerTransforms != null),
         hasAppIcon = data.appIconId != null,
         availableCustomTextGroups = customTextGroups,
         onDismissRequest = onDismissRequest,
         onConfirm = onConfirm,
         formatVersion = theme.data.version,
+        adaptive = theme.isAdaptive,
         forceMaterial = forceMaterial,
+        hasCustomColors = data.appearance?.colors != null,
+        hasImageEffects = data.appearance?.image != null,
+        hasBottomBarIcons = data.bottomBarIcons != null || theme.bottomBarIconPaths.isNotEmpty(),
     )
 }

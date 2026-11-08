@@ -9,9 +9,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sukisu.ultra.data.repository.SettingsRepository
 import com.sukisu.ultra.data.repository.SettingsRepositoryImpl
+import com.sukisu.ultra.data.repository.KEY_CUSTOM_APPEARANCE
 import com.sukisu.ultra.ksuApp
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.theme.ThemeController
+import com.sukisu.ultra.ui.util.AdaptiveThemeStore
 import com.sukisu.ultra.ui.util.ImageStorage
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
@@ -112,6 +114,18 @@ class MainActivityViewModel(
         }
     }
 
+    /**
+     * Applies the light or dark half of an active adaptive theme when the system mode changes.
+     * The marker in AdaptiveThemeStore keeps this a no-op while the applied half is current.
+     */
+    fun syncAdaptiveTheme(dark: Boolean) {
+        viewModelScope.launch {
+            if (AdaptiveThemeStore.sync(settingRepo, dark)) {
+                _uiState.value = readUiState()
+            }
+        }
+    }
+
     private fun readUiState(): MainActivityUiState {
         val useSystemWallpaper = settingRepo.useSystemWallpaper
         val systemWallpaperPath = ImageStorage.systemWallpaperFile(ksuApp)
@@ -120,6 +134,7 @@ class MainActivityViewModel(
             appSettings = ThemeController.getAppSettings(),
             pageScale = settingRepo.pageScale,
             enableBlur = settingRepo.enableBlur,
+            enableProgressiveBlur = settingRepo.enableProgressiveBlur,
             enableFloatingBottomBar = settingRepo.enableFloatingBottomBar,
             enableFloatingBottomBarBlur = settingRepo.enableFloatingBottomBarBlur,
             enableNavigationBadge = settingRepo.enableNavigationBadge,
@@ -150,7 +165,7 @@ class MainActivityViewModel(
     companion object {
         const val SETTINGS_PREFS = "settings"
 
-        /** Window-scoped only: holds the color to keep while a background seed is scoring. */
+        
         const val KEY_COLOR_PENDING = "key_color_pending"
 
         private const val NO_PENDING_SEED = Int.MIN_VALUE
@@ -164,6 +179,7 @@ class MainActivityViewModel(
             "page_scale",
             "module_description_max_lines",
             "enable_blur",
+            "enable_progressive_blur",
             "enable_floating_bottom_bar",
             "enable_floating_bottom_bar_blur",
             "enable_navigation_badge",
@@ -178,6 +194,13 @@ class MainActivityViewModel(
             KEY_COLOR_PENDING,
             "ui_mode",
             "custom_texts",
+            "adaptive_theme",
+            "adaptive_applied_mode",
+            KEY_CUSTOM_APPEARANCE,
+            "home_card_image_path",
+            "home_card_stickers",
+            "hide_home_card_status_text",
+            "hide_home_card_decoration",
         )
     }
 }

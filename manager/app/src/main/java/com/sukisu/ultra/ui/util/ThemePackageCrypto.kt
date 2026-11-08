@@ -1,5 +1,8 @@
 package com.sukisu.ultra.ui.util
 
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -7,8 +10,16 @@ import javax.crypto.spec.SecretKeySpec
 
 object ThemePackageCrypto {
     private val MAGIC = byteArrayOf('S'.code.toByte(), 'K'.code.toByte(), 'T'.code.toByte(), 'H'.code.toByte())
+    const val HEADER_SIZE = 4
     private const val IV_SIZE = 12
     private const val TAG_BIT_LENGTH = 128
+    /**
+     * `Cipher.update` is a JNI round trip. Android's `CipherInputStream` feeds it
+     * 512-byte pieces, so a 20 MB package turns into tens of thousands of calls,
+     * which is what makes large packages feel stuck. Batching both directions
+     * through this buffer keeps the cost proportional to the crypto work.
+     */
+    private const val STREAM_BUFFER_SIZE = 256 * 1024
 
     // 48-byte precomputed hash of theme key
     private val HASH_BYTES = byteArrayOf(
@@ -23,6 +34,10 @@ object ThemePackageCrypto {
     private val secretKey = SecretKeySpec(HASH_BYTES.copyOfRange(0, 32), "AES")
     private val secureRandom = SecureRandom()
 
+    
+    fun hasValidHeader(bytes: ByteArray): Boolean =
+        bytes.size >= MAGIC.size && MAGIC.indices.all { bytes[it] == MAGIC[it] }
+
     fun encrypt(plainBytes: ByteArray): ByteArray {
         val iv = ByteArray(IV_SIZE)
         secureRandom.nextBytes(iv)
@@ -36,6 +51,20 @@ object ThemePackageCrypto {
         System.arraycopy(iv, 0, result, MAGIC.size, IV_SIZE)
         System.arraycopy(cipherText, 0, result, MAGIC.size + IV_SIZE, cipherText.size)
         return result
+    }
+
+    /**
+     * Writes the package header/IV and returns a cipher stream for the plaintext. Closing the
+     * returned stream appends the GCM tag and closes [output].
+     */
+    fun encryptingStream(output: OutputStream): OutputStream {
+        val iv = ByteArray(IV_SIZE)
+        secureRandom.nextBytes(iv)
+        output.write(MAGIC)
+        output.write(iv)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, GCMParameterSpec(TAG_BIT_LENGTH, iv))
+        return CipherSink(output, cipher)
     }
 
     fun decrypt(encryptedBytes: ByteArray): ByteArray {
@@ -56,5 +85,173 @@ object ThemePackageCrypto {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(TAG_BIT_LENGTH, iv))
         return cipher.doFinal(encryptedBytes, cipherTextOffset, cipherTextLength)
+    }
+
+    /**
+     * Streams decryption without buffering the whole package. The GCM tag is verified when
+     * the returned stream reaches EOF or is closed, so callers must not silently drop it:
+     * closing drains any unread payload and surfaces a tampered package.
+     */
+    fun decryptingStream(input: InputStream): InputStream {
+        val header = ByteArray(MAGIC.size + IV_SIZE)
+        readFully(input, header)
+        for (i in MAGIC.indices) {
+            if (header[i] != MAGIC[i]) {
+                error("Invalid theme package: header mismatch")
+            }
+        }
+        val iv = header.copyOfRange(MAGIC.size, MAGIC.size + IV_SIZE)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(TAG_BIT_LENGTH, iv))
+        return CipherSource(input, cipher)
+    }
+
+    private fun readFully(input: InputStream, buffer: ByteArray) {
+        var offset = 0
+        while (offset < buffer.size) {
+            val read = input.read(buffer, offset, buffer.size - offset)
+            if (read < 0) error("Invalid theme package: truncated header")
+            offset += read
+        }
+    }
+
+    
+    private class CipherSink(
+        private val output: OutputStream,
+        private val cipher: Cipher,
+    ) : OutputStream() {
+        private val buffer = ByteArray(STREAM_BUFFER_SIZE)
+        private val singleByte = ByteArray(1)
+        private val lock = Any()
+        private var buffered = 0
+        private var closed = false
+
+        override fun write(b: Int) {
+            singleByte[0] = b.toByte()
+            write(singleByte, 0, 1)
+        }
+
+        override fun write(b: ByteArray, off: Int, len: Int) {
+            if (off < 0 || len < 0 || off + len > b.size) {
+                throw IndexOutOfBoundsException()
+            }
+            synchronized(lock) {
+                if (closed) throw IOException("Stream closed")
+                var offset = off
+                var remaining = len
+                while (remaining > 0) {
+                    val count = minOf(remaining, buffer.size - buffered)
+                    System.arraycopy(b, offset, buffer, buffered, count)
+                    buffered += count
+                    offset += count
+                    remaining -= count
+                    if (buffered == buffer.size) flushBuffer()
+                }
+            }
+        }
+
+        private fun flushBuffer() {
+            if (buffered == 0) return
+            val encrypted = cipher.update(buffer, 0, buffered)
+            if (encrypted != null && encrypted.isNotEmpty()) {
+                output.write(encrypted)
+            }
+            buffered = 0
+        }
+
+        override fun flush() {
+            synchronized(lock) {
+                if (closed) throw IOException("Stream closed")
+                // Never finalize the cipher here: GCM still holds its last block.
+                output.flush()
+            }
+        }
+
+        override fun close() {
+            synchronized(lock) {
+                if (closed) return
+                closed = true
+                try {
+                    flushBuffer()
+                    val tail = cipher.doFinal()
+                    if (tail != null && tail.isNotEmpty()) {
+                        output.write(tail)
+                    }
+                    output.flush()
+                } finally {
+                    output.close()
+                }
+            }
+        }
+    }
+
+    
+    private class CipherSource(
+        private val input: InputStream,
+        private val cipher: Cipher,
+    ) : InputStream() {
+        private val encrypted = ByteArray(STREAM_BUFFER_SIZE)
+        private val singleByte = ByteArray(1)
+        private var plain = ByteArray(0)
+        private var plainOffset = 0
+        private var eof = false
+        private var closed = false
+
+        override fun read(): Int {
+            val count = read(singleByte, 0, 1)
+            return if (count < 0) -1 else singleByte[0].toInt() and 0xFF
+        }
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if (off < 0 || len < 0 || off + len > b.size) {
+                throw IndexOutOfBoundsException()
+            }
+            if (len == 0) return 0
+            if (closed) throw IOException("Stream closed")
+            while (plainOffset >= plain.size) {
+                if (eof) return -1
+                fill()
+            }
+            val count = minOf(len, plain.size - plainOffset)
+            System.arraycopy(plain, plainOffset, b, off, count)
+            plainOffset += count
+            return count
+        }
+
+        private fun fill() {
+            while (true) {
+                val read = input.read(encrypted)
+                if (read < 0) {
+                    eof = true
+                    plain = cipher.doFinal()
+                    plainOffset = 0
+                    return
+                }
+                if (read == 0) continue
+                val decrypted = cipher.update(encrypted, 0, read)
+                if (decrypted != null && decrypted.isNotEmpty()) {
+                    plain = decrypted
+                    plainOffset = 0
+                    return
+                }
+            }
+        }
+
+        override fun close() {
+            if (closed) return
+            try {
+                if (!eof) {
+                    // Draining forces GCM to verify the tag even when the caller only
+                    // needed a header (e.g. reading theme.json while inspecting a package).
+                    val sink = ByteArray(64 * 1024)
+                    while (read(sink, 0, sink.size) >= 0) {
+                        // Discard the remaining plaintext.
+                    }
+                }
+            } finally {
+                closed = true
+                input.close()
+            }
+        }
     }
 }
